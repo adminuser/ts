@@ -1,0 +1,179 @@
+<?php
+class QS_Controller extends CI_Controller
+{
+	public function __construct(){
+		parent::__construct();
+	}
+	
+	/**
+	 * Sets session data
+	 * @param string $key Key to store data
+	 * @param string $value Data to store
+	 */
+	public function setSessionData($key, $value){
+		$this->session->set_userdata($key, $value);	
+	}
+	
+	
+	/**
+	 * Retrieve data from session
+	 * @param string $key Key to retrieve
+	 */
+	public function getSessionData($key){
+		return $this->session->userdata($key);
+	}
+	
+	public function setFlash($key, $val){
+		$this->session->set_flashdata($key, $val);
+	}
+	
+	public function getFlash($key){
+		return $this->session->flashdata($key);
+	}
+	
+	/**
+	 * Sets user as authenticated
+	 * @param string $key Key to retrieve
+	 */
+	public function setAuthenticated($bool = FALSE){
+		if($bool){
+			$this->setSessionData('is_authenticated', TRUE);
+		}
+		else {
+			$this->session->sess_destroy();
+			$this->setSessionData('is_authenticated', FALSE);
+		}
+	}
+	
+	/**
+	 * Checks whether user is authenticated
+	 * @return boolean
+	 */
+	public function isAuthenticated(){
+		if($this->getSessionData('is_authenticated')){
+			return true;
+		}	
+		else {
+			return false;
+		}
+	}
+	
+	/** 
+	 * Set page title
+	 * @param string $title Title of page
+	 */
+	public function setTitle($title){
+		$this->template->write('title',trim($title));
+	}
+	
+	/**
+	 * Set page template
+	 * @param string $template template file
+	 */
+	public function setTemplate($template){
+		$this->template->set_template($template);
+	}
+	
+	/**
+	 * Sets content for region defined in template
+	 * @param string $region Region name
+	 * @param string $content Content for region
+	 */
+	public function setRegion($region, $content){
+		$this->template->write($region, $content, TRUE);	
+	}
+	
+	/**
+	 * Renders a view
+	 * @param string $view view filename
+	 * @param array $data parameters for view
+	 */
+	public function render($view, $data = array()){
+		$this->template->write_view('content', $view, $data, TRUE);
+		$this->template->render();	
+	}
+	
+	/**
+	 * Add stylesheets to template
+	 * @param array $css_files CSS file names
+	 */
+	public function stylesheets($css_files = array()){
+		if(!is_array($css_files)){
+			$css_files = array($css_files);
+		}
+		
+		foreach($css_files as $css){
+			$this->template->add_css('css/' . $css);
+		}
+	}
+	
+	/**
+	 * Add javascripts to template
+	 * @param array $js_files Javascript file names
+	 */
+	public function javascripts($js_files = array()){
+		if(!is_array($js_files)){
+			$js_files = array($js_files);
+		}
+	
+		foreach($js_files as $js){
+			$this->template->add_js('js/' . $js);
+		}
+	}
+	
+	/**
+	 * Loads model class and returns object
+	 * @param string $model model class
+	 * @return model class object
+	 */
+	public function getModel($model){
+		$this->load->model($model);
+		return $this->$model;
+	}
+	
+	public function getLibrary($class){
+		$this->load->library($class);
+		$class = strtolower($class);
+		return $this->$class;
+	}
+	
+	public function isMethod($method){
+		$method = strtoupper($method);
+		
+		if($_SERVER['REQUEST_METHOD'] == $method){
+			return TRUE;
+		}
+		else {
+			return FALSE;
+		}
+	}
+	
+	public function isXmlHttpRequest(){
+		if(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH']){
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	public function getMailer(){
+		$this->load->library('SimpleEmailService');
+		$mailer = $this->simpleemailservice;
+		$mailer->setAuth($this->config->item('ses_access_key'), $this->config->item('ses_secret'));
+		$mailer->enableVerifyPeer(false);
+
+		return $mailer;
+	}
+	
+	public function getMailerMessage($to, $body, $subject, $from = null){
+		$this->load->library('SimpleEmailServiceMessage');
+		$message = $this->simpleemailservicemessage;
+		$message->addTo($to);
+		$message->setFrom($from);
+		$message->setSubject($subject);
+		$message->setMessageFromString('',$body);
+		
+		return $message;
+	}
+}

@@ -1,0 +1,2493 @@
+<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
+//require_once ('ses.php');
+//include('pro/dashboard.php');
+//require_once('auth.php');
+//require_once('auth.php');
+//$companyid = $_SESSION['companyID'];
+
+/**
+ * This is the Controller class handling all function related
+ * to users
+ *
+ */
+class usermanage extends QS_Controller {
+
+ function __construct(){
+        parent::__construct();
+        //$this->load->helper('log4php');
+        $this->load->model('usermanage/usermanagemodel');
+
+    }
+
+    public function index() 
+	{
+		$this->setTemplate('usermanagement');
+        //$this->load->view('index');
+		$this->stylesheets(array(
+				'jquery-ui.css',
+				'themes/base/jquery.ui.all.css',
+				'styles.css'
+		));
+		$styles=array(
+				'jquery-ui.css',
+				'themes/base/jquery.ui.all.css',
+				'styles.css'
+		);
+	 	$this->javascripts(array(
+	 			'ui/jquery.ui.core.js',
+				'ui/jquery.ui.widget.js',
+				'ui/jquery.ui.mouse.js',
+				'ui/jquery.ui.sortable.js',
+   				'ui/jquery.ui.accordion.js',
+	 			'usermanage/usermanage.js'
+	 	));
+	 	
+	 	$userinfo=$this->getSessionData('userinfo');
+	 	$companyinfo=$this->getSessionData('companyinfo');
+	 	
+
+        $this->render('index',array('userinfo'=>$userinfo,'companyinfo'=>$companyinfo));
+	}
+    //This function adds user through usermanagement section
+    public function create() { 
+      log_message('info','************ cntrl-usermanage-create-start ***************');
+      $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('txtfirstname', 'First Name', 'required|alpha');
+        $this->form_validation->set_rules('txtlastname', 'Last Name', 'required');
+        $this->form_validation->set_rules('txtemailid', 'Email Id', 'required|valid_email|callback_emailidunique');
+        //$this->form_validation->set_rules('txtusername', 'User Name', 'required|valid_email|callback_usernameunique');
+        // $this->form_validation->set_rules('txtpassword', 'Password', 'required');
+        $this->form_validation->set_rules('dpdrole', 'Role', 'callback_dpdrole');
+        $this->form_validation->set_rules('txtaddress1', 'Address 1', 'required');
+        // $this->form_validation->set_rules('txtaddress2', 'Address 2', 'required');
+        // $this->form_validation->set_rules('txtcity', 'City', 'required');
+        // $this->form_validation->set_rules('txtstate', 'State', 'required');
+        // $this->form_validation->set_rules('txtzipcode', 'Zipcode', 'required');
+        $this->form_validation->set_rules('txtphoneno', 'Phone No.', 'required');
+        $this->form_validation->set_rules('dpdstatus', 'Status', 'callback_dpdstatus');
+        $this->load->model('usermanage/usermanagemodel');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************validation -False-start ***************');
+            if(isset($_GET['role'])){$this->rolename=$_GET['role'];}
+            if(isset($_POST['rolename'])){$this->rolename=$_GET['role']=$_POST['rolename'];}
+            $this->roles = $this->usermanagemodel->loadroles();
+            $this->privileges = $this->usermanagemodel->loadprivileges();
+            $this->cmp = $this->usermanagemodel->getcompany();
+           	$userinfo= $this->getSessionData('userinfo');
+           	$this->javascripts(array('usermanage/adduserview.js'));        
+            $this->render('usermanage/adduserview',array('userinfo'=>$userinfo,'this->roles'=> $this->roles,'this->cmp'=> $this->cmp,'this->privileges'=>$this->privileges,
+            		'this->rolename'=>$this->rolename) );
+            log_message('info','************validation -False-end ***************');
+        } else {
+            log_message('info','************validation - True-start ***************');
+            $this->mail = $this->usermanagemodel->create();
+            $this->load->view("usermanage/success");
+            $this->siteurl= $this->config->item('site_url');
+            $this->load->view('usermanage/successuser', $this->mail);
+            log_message('info','************validation - True-end ***************');
+        }
+        log_message('info','************ cntrl-usermanage-create-end ***************');
+    }
+
+    /*  Custom Validation   */
+
+    public function dpdrole($role) {
+      log_message('info','************ cntrl-usermanage-dpdrole(custom validation)-start ***************');
+        //if no role is selected
+        if ($role === "0") {
+          log_message('info','************role not selected***************');
+            $this->form_validation->set_message('dpdrole', 'Select any one Role');
+            return FALSE;
+        } else {
+          log_message('info','************role selected ***************');
+            return TRUE;
+        }
+      log_message('info','************ cntrl-usermanage-dpdrole(custom validation)-end ***************');
+    }
+
+    public function dpdstatus($status) {
+      log_message('info','************ cntrl-usermanage-dpdstatus(custom validation)-start ***************');
+        //if no status is selected
+        if ($status === "0") {
+            log_message('info','************status not selected***************');
+            $this->form_validation->set_message('dpdstatus', 'Select any one Status');
+            return FALSE;
+        } else {
+          log_message('info','************status selected***************');
+            return TRUE;
+        }
+      log_message('info','************ cntrl-usermanage-dpdstatus(custom validation)-end ***************');
+    }
+
+    /* Custom Validation */
+
+
+
+    /*     View User Section  */
+
+//This function will fetch the users data for view page
+    public function view() {
+        log_message('info','************ cntrl-usermanage-view-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->view();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/usersview", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-view-end ***************');
+    }
+
+    public function show() {
+        log_message('info','************ cntrl-usermanage-show-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->show();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/userfullview",array('this->query'=>$this->query,'userinfo'=>$userinfo) );
+        log_message('info','************ cntrl-usermanage-show-end ***************');
+    }
+
+    /*     View User Section   */
+
+
+    /*  Delete user     */
+
+    public function deleteview() {
+        log_message('info','************ cntrl-usermanage-deleteview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('txtfirstname', 'First Name', 'required');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->deleteview();
+        $this->companyid = $_GET['companyid'];
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/deleteusersview", array('this->query'=>$this->query,'this->companyid'=> $this->companyid,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-deleteview-end ***************');
+    }
+
+    public function deleteshow() {
+        log_message('info','************ cntrl-usermanage-deleteshow-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->show();
+        $this->companyid = $this->input->post('companyID');
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/deleteuserfullview", array('this->companyid'=>$this->companyid,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-deleteshow-end ***************');
+    }
+
+    public function deleteuser() {
+        log_message('info','************ cntrl-usermanage-deleteuser-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $q = $this->usermanagemodel->deleteuser();
+        $this->usermanagemodel->deleteuser();
+        $companyid = $this->input->post('companyID');
+        $this->query = $this->deleteviewafterdelete($companyid);
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/deleteusersview", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-deleteuser-end ***************');
+    }
+
+    public function deleteviewafterdelete($companyid) {
+        log_message('info','************ cntrl-usermanage-deleteviewafterdelete-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->deleteviewafterdelete($companyid);
+        return $this->query;
+        log_message('info','************ cntrl-usermanage-deleteviewafterdelete-end***************');
+    }
+
+    /*     Delete user     */
+
+    /* Load All User to Edit */
+
+    public function loadall() {
+        log_message('info','************ cntrl-usermanage-loadall-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadall();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/edituserload", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-loadall-end ***************');
+    }
+
+    public function loadallafteredit($companyid) {
+        log_message('info','************ cntrl-usermanage-loadallafteredit-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadallafteredit($companyid);
+        return $this->query;
+        log_message('info','************ cntrl-usermanage-loadallafteredit-end ***************');
+    }
+
+    /* Load All User to Edit */
+
+//Function to Reset Password
+    public function ResetPassword() {
+        log_message('info','************ cntrl-usermanage-ResetPassword-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $id = $this->input->post('id');
+        $this->q = $this->usermanagemodel->ResetPassword();
+        $this->password = base64_decode($this->q[0]['password']);
+        $this->emailid = $this->q[0]['emailid'];
+        $this->userid = $this->q[0]['userID'];
+        $this->username = $this->q[0]['username'];
+		$this->firstname= $this->q[0]['firstname'];
+        $this->load->view('usermanage/mailreset', $this->emailid, $this->username, $this->password,$this->firstname);
+         log_message('info','************ cntrl-usermanage-ResetPassword-end ***************');
+    }
+
+    /* activation process */
+
+    function activate() {
+        log_message('info','************ cntrl-usermanage-activate-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->value = $this->usermanagemodel->activate();
+        $this->load->view('usermanage/activation', $this->value);
+        log_message('info','************ cntrl-usermanage-activate-end ***************');
+    }
+
+    /*       Edit user      */
+
+    public function edituserview() {
+        log_message('info','************ cntrl-usermanage-edituserview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $userid = $this->input->post('userID');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->edituserview();//print_r($this->query);exit;
+        $this->roles = $this->usermanagemodel->getrolesfromtblroles();
+        $this->cmp = $this->usermanagemodel->getsinglecompany();
+        $this->javascripts(array('usermanage/edituserview.js'));
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/edituserview", array('this->query'=>$this->query,'userinfo'=>$userinfo,'companyinfo'=>$companyinfo,'this->roles'=>$this->roles,'this->cmp'=>$this->cmp) );
+        log_message('info','************ cntrl-usermanage-edituserview-end ***************');
+    }
+
+    public function edit() {
+        log_message('info','************ cntrl-usermanage-edit-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('txtfirstname', 'First Name', 'required');
+        $this->form_validation->set_rules('txtlastname', 'Last Name', 'required');
+        $this->form_validation->set_rules('txtemailid', 'Email Id', 'callback_emailidunique');
+        $this->form_validation->set_rules('txtusername', 'User Name', 'callback_usernameunique');
+        $this->form_validation->set_rules('txtpassword', 'Password', 'required');
+        $this->form_validation->set_rules('dpdrole', 'Role', 'callback_dpdrole');
+        $this->form_validation->set_rules('txtphoneno', 'Phone No.', 'required');
+        $this->form_validation->set_rules('dpdstatus', 'Status', 'callback_dpdstatus');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $userid = $this->input->post('userID');
+            $this->load->model('usermanage/usermanagemodel');
+            $this->query = $this->usermanagemodel->edituserview();
+            $this->roles = $this->usermanagemodel->getrolesfromtblroles();
+            $this->cmp = $this->usermanagemodel->getsinglecompany();
+            $this->javascripts(array('usermanage/edituserview.js'));
+            $userinfo=$this->getSessionData('userinfo');
+            $companyinfo=$this->getSessionData('companyinfo');
+            $this->render("usermanage/edituserview", array('this->query'=>$this->query,'userinfo'=>$userinfo,'companyinfo'=>$companyinfo,'this->roles'=>$this->roles,'this->cmp'=>$this->cmp));
+        } else {
+        	
+            log_message('info','************ Validation True ***************');
+            $companyid = $this->usermanagemodel->edit();
+            $this->query = $this->loadallafteredit($companyid);
+            $userinfo=$this->getSessionData('userinfo');
+            $companyinfo=$this->getSessionData('companyinfo');
+            $this->render("usermanage/edituserload", array('this->query'=>$this->query,'userinfo'=>$userinfo,'companyinfo'=>$companyinfo));
+        }
+        log_message('info','************ cntrl-usermanage-edit-end ***************');
+    }
+
+    public function emailidunique($value) {
+        log_message('info','************ cntrl-usermanage-emailidunique-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->model('usermanage/usermanagemodel');
+        $unique = $this->usermanagemodel->emailidunique($value);
+        for ($i = 0; $i < count($unique); $i++) {
+            if (($unique[$i]->emailid) === $value) {
+                log_message('info','************ duplicate email id found ***************');
+                $this->form_validation->set_message('emailidunique', 'The Email Id already exist.it must contain a unique value.');
+                return FALSE;
+            }
+        }
+        return TRUE;
+        log_message('info','************ cntrl-usermanage-emailidunique-end ***************');
+    }
+
+    public function usernameunique($value) {
+        log_message('info','************ cntrl-usermanage-usernameunique-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->model('usermanage/usermanagemodel');
+        $unique = $this->usermanagemodel->usernameunique($value);
+        for ($i = 0; $i < count($unique); $i++) {
+            if (($unique[$i]->username) === $value) {
+                log_message('info','************ duplicate username found ***************');
+                $this->form_validation->set_message('usernameunique', 'The Username already exist.it must contain a unique value.');
+                return FALSE;
+            }
+        }
+        return TRUE;
+        log_message('info','************ cntrl-usermanage-usernameunique-end ***************');
+    }
+
+    public function getprivilege() {
+        log_message('info','************ cntrl-usermanage-getprivilege-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/getprivilegemodel');
+        $this->query = $this->getprivilegemodel->getprivilege();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render('usermanage/showprivilege', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-getprivilege-end ***************');
+    }
+
+    public function getcompany() {
+        log_message('info','************ cntrl-usermanage-getcompany-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->cmp = $this->usermanagemodel->getcompany();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->javascripts(array('usermanage/adduserview.js'));
+        $this->render('usermanage/adduserview', array('this->cmp'=>$this->cmp));
+        log_message('info','************ cntrl-usermanage-getcompany-end ***************');
+    }
+
+    /*   Start -  COMPANY SECTION       */
+
+    public function createcompany() {
+        log_message('info','************ cntrl-usermanage-createcompany-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('txtcompanyname', 'Company Name', 'required|is_unique[tblcompany.companyname]');
+        $this->form_validation->set_rules('txtloginid', 'Login Id', 'is_unique[tblcompany.loginid]|valid_email');
+        $this->form_validation->set_rules('txtcompanyaddress', 'Company Address', 'required');
+        $this->form_validation->set_rules('txtloginpassword', 'Password', 'min_length[6]');
+        $this->form_validation->set_rules('txtcity', 'Company City', 'required|callback_city');
+        $this->form_validation->set_rules('txtbonusbidcredits', 'Bonus Bid Credits ', 'integer|greater_than[0]');
+        $this->form_validation->set_rules('txtcontactpersonphone', 'First Contact Phone', 'callback_phone1');
+        $this->form_validation->set_rules('txtsecondarycontactphone', 'Second Contact Phone ', 'callback_phone1');
+        $this->form_validation->set_rules('txtzipcode', 'Company Zip Code', 'required|numeric');
+        $this->form_validation->set_rules('txtstate', 'Company State', 'callback_state');
+        $this->form_validation->set_rules('txtleadswon', 'Leads Won', 'integer|greater_than[0]');
+        $this->form_validation->set_rules('txtfirstcontactfname', 'First Contact First Name', 'callback_firstcontactfname|alpha');
+        $this->form_validation->set_rules('txtleadslost', 'Leads Lost', 'integer|greater_than[0]');
+        $this->form_validation->set_rules('txtfirstcontactlname', 'Fist Contact Last Name', 'callback_firstcontactlname');
+        $this->form_validation->set_rules('txtbbbrating', 'BBB Rating', 'callback_fcext');
+        $this->form_validation->set_rules('txtfirstcontactemail', 'First Contact Email', 'valid_email');
+        $this->form_validation->set_rules('txtcontractorlicensetype1', 'Contractor License 1 Type', 'callback_type1');
+        $this->form_validation->set_rules('txtcontractorlicensetype1number', 'Contractor License Type1 Number', 'callback_type1number');
+        $this->form_validation->set_rules('txtfirstcontactext', 'First Contact Extension', 'calback_fcext');
+        $this->form_validation->set_rules('txtcontractorlicense2', 'Contractor License 2 Type', 'callback_type2');
+        $this->form_validation->set_rules('dpdfirstcontact', 'First Contact Is Primary Contact', 'callback_mycheck1');
+        $this->form_validation->set_rules('txtcontractorlicense2number', 'Contractor License 2 Number', 'callback_type2number');
+        $this->form_validation->set_rules('txtsecondarycontactfname', 'Secondary Contact First Name', 'callback_secondcontactfname');
+        $this->form_validation->set_rules('txtcontractorlicense3', 'Contractor License 3 Type', 'callback_type3');
+        $this->form_validation->set_rules('txtsecondarycontactlname', 'Secondary Contact Last Name', 'callback_secondcontactlname');
+        $this->form_validation->set_rules('txtcontractorlicense3number', 'Contractor License 3 Number', 'callback_type3number');
+        $this->form_validation->set_rules('txtsecondarycontactemail', 'Secondary Contact Email', 'valid_email');
+        $this->form_validation->set_rules('txttype1number', 'NABCEP Certification Type 1 Number', 'callback_type1');
+        $this->form_validation->set_rules('txttype1', 'NABCEP Certification Type 1', 'callback_mycheck2');
+        $this->form_validation->set_rules('txtsecondarycontactext', 'Secondary Contact Extension', 'callback_type1number');
+        $this->form_validation->set_rules('txttype2', 'NABCEP Certification Type 2', 'calback_fcext');
+        $this->form_validation->set_rules('dpdsecondarycontact', 'Secondary Contact is Primary Contact', 'callback_mycheck2');
+        $this->form_validation->set_rules('txttype2number', 'NABCEP Certification Type 2 Number', 'callback_type2');
+        $this->form_validation->set_rules('txtcompanyfax', 'Company Fax', 'numeric|greater_than[6]');
+        $this->form_validation->set_rules('txttype3', 'NABCEP Certification Type 3', 'callback_type3');
+        $this->form_validation->set_rules('txtcompanywebsite', 'Company Website', 'callback_type1');
+        $this->form_validation->set_rules('txttype3number', 'NABCEP Certification Type 3 Number', 'callback_type3number');
+        $this->form_validation->set_rules('txtpaidbidcredits', 'Paid Bid Credits', 'integer|greater_than[0]');
+        $this->form_validation->set_rules('dpdstatus', 'Status', 'callback_dpdstatus');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $userinfo=$this->getSessionData('userinfo');
+            $companyinfo=$this->getSessionData('companyinfo');
+            $this->javascripts(array('usermanage/addcompanyview.js'));
+            $this->render('usermanage/addcompanyview',array('userinfo'=>$userinfo,'companyinfo'=>$companyinfo));
+        } else {
+            log_message('info','************ Validation True ***************');
+            $this->load->model('usermanage/usermanagemodel');
+            $value = $this->usermanagemodel->createcompany();
+            //loading back view company page
+            $this->query = $this->usermanagemodel->viewcompanyafteradd();
+            $userinfo=$this->getSessionData('userinfo');
+            $companyinfo=$this->getSessionData('companyinfo');
+            $this->javascripts(array('usermanage/addcompanyview.js'));
+            $this->render("usermanage/companiesview", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+        }
+        log_message('info','************ cntrl-usermanage-createcompany-end ***************');
+    }
+
+    public function firstcontactlname() {
+        return TRUE;
+    }
+
+    public function type1() {
+        return TRUE;
+    }
+
+    public function type1number() {
+        return TRUE;
+    }
+
+    public function fcext() {
+        return TRUE;
+    }
+
+    public function type2() {
+        return TRUE;
+    }
+
+    public function type2number() {
+        return TRUE;
+    }
+
+    public function secondcontactfname() {
+        return TRUE;
+    }
+
+    public function type3() {
+        return TRUE;
+    }
+
+    public function callback_phone1() {
+        return TRUE;
+    }
+
+    public function mycheck1() {
+        return TRUE;
+    }
+
+    public function mycheck2() {
+        return TRUE;
+    }
+
+    public function secondcontactlname() {
+        return TRUE;
+    }
+
+    public function type3number() {
+        return TRUE;
+    }
+
+    public function firstcontactfname() {
+        return TRUE;
+    }
+
+    public function city($val) {
+      log_message('info','************ cntrl-usermanage-city-start ***************');
+       // if (!preg_match("/^[a-zA-Z]$/", $val)) {
+       if (preg_match("/^-?[0-9]{1,4}$/", $val)) {
+            log_message('info','************ Invalid city name entered ***************');
+            $this->form_validation->set_message('city', 'Enter the valid City name.');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-city-end ***************');
+    }
+
+    public function state($state) {
+        if ($state == '0') {
+          log_message('info','************ State field not Selected ***************');
+            $this->form_validation->set_message('state', 'Select any one State');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+    }
+
+    public function zip($zip_code) {
+      //  if (!(preg_match("/^([0-9]{5})(-[0-9]{4})?$/i", $zip_code)) ) {
+         if (preg_match("/^-?[0-9]{1,4}$/", $zip_code)) {
+            log_message('info','************ Invalid Zipcode entered***************');
+            return TRUE;
+        } else {
+          $this->form_validation->set_message('zip', 'Enter the valid Zip Code.');
+            return FALSE;
+        }
+    }
+
+    public function dpdowner($owner) {
+        //if no status is selected
+        if ($owner === "0") {
+            log_message('info','************Owner field not Selected ***************');
+            $this->form_validation->set_message('dpdowner', 'Select Owner as Yes or No');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+    }
+
+    /*  View  Company  */
+
+    public function viewcompany() {
+        log_message('info','************ cntrl-usermanage-viewcompany-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->viewcompany();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/companiesview", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+       log_message('info','************ cntrl-usermanage-viewcompany-end ***************');
+    }
+
+//function to use view the company
+
+/*       public function companyprofile(){
+       $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->company = $this->usermanagemodel->editcompanyview();
+        $this->load->view('pro/head');
+        $this->load->view("usermanage/companyprofile", $this->company);
+        $this->load->view('pro/footer');
+       }*/
+
+       public function viewcompany_sub($companyid) {
+        log_message('info','************ cntrl-usermanage-viewcompany-start ***************');
+
+        /*$filename = $this->do_upload();
+        $uploadarray = isset($this->data) ? $this->data : 0;*/
+
+        $this->load->model('usermanage/usermanagemodel');
+        $_POST['txtcompanyid']=$companyid;//setting post from get request
+        $companyinfo = $this->usermanagemodel->editcompanyview();
+        $companyinfo = (array)$companyinfo[0];
+
+
+
+       //print_r($lead);exit;
+
+        $this->load->view('pro/head');
+        $this->load->view("usermanage/companyprofile",array('companydata'=>$companyinfo,'image'=>$lead));
+        $this->load->view('pro/footer');
+
+
+        log_message('info','************ cntrl-usermanage-viewcompany-end ***************');
+    }
+
+       public function viewcompanyafteradd() {
+        log_message('info','************ cntrl-usermanage-viewcompanyafteradd-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->viewcompany();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/companiesview", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-viewcompanyafteradd-end ***************');
+    }
+
+//show full view
+    public function showfullview() {
+        log_message('info','************ cntrl-usermanage-showfullview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->showfullview(); 
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/companyfullview", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+       log_message('info','************ cntrl-usermanage-showfullview-end ***************');
+    }
+
+//show full view from account setting
+    public function showfullview_sub() {
+        log_message('info','************ cntrl-usermanage-showfullview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->showfullview();
+        $this->load->view('pro/head');
+        $this->load->view("usermanage/companyfullview_sub", $this->query);
+        $this->load->view('pro/footer');
+        log_message('info','************ cntrl-usermanage-showfullview-end ***************');
+    }
+
+    /* Load to Edit Company */
+
+    public function loadallcompany() {
+        log_message('info','************ cntrl-usermanage-loadallcompany-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadallcompany();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/editcompanyload", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-loadallcompany-end ***************');
+    }
+  // Load to Cancel Company
+    public function loadallcompanytocancel() {
+        log_message('info','************ cntrl-usermanage-loadallcompanytocancel-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadallcompanytocancel();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->render("usermanage/cancelcompanyload", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-loadallcompanytocancel-end ***************');
+    }
+
+    // Load to Cancel Company account
+    public function cancelcompanyaccount($id) {
+        log_message('info','************ cntrl-usermanage-cancelcompanyaccount-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->companyaccountcancel($id);
+        $this->companyname = $this->usermanagemodel->getcompanyname($id);
+        $company = $this->companyname[0]->companyname;
+        $count=count($this->query);
+        for($i=0; $i<$count; $i++){
+
+        $too = $this->query[$i]->emailid;
+        $firstname = $this->query[$i]->firstname;
+        $lastname = $this->query[$i]->lastname;
+
+        $message = 'Dear ' . $firstname . ' ' . $lastname . ',
+
+   Your company, ' . $company . ' account has been cancelled based on your request.
+
+
+Regards,
+Quicksolar Support Team';
+        $emailsubject = 'Your Quicksolar Account Has Cancelled';
+
+        $ses = new SimpleEmailService('AKIAIW7YQTRZBE4ISGGQ', 'm1Sl80yV4WMLxC2C1ysVos4+L9vvZcCtAlSGMQPh');
+        $ses->enableVerifyPeer(false);
+        $m = new SimpleEmailServiceMessage();
+        $m->addTo($too);
+        $m->setFrom('thunderpaste@gmail.com');
+        $m->setSubject($emailsubject);
+        $m->setMessageFromString($message);
+        $ses->enableVerifyPeer(false);
+
+        if ($ses->sendEmail($m) == TRUE) {
+             //echo "k" ;
+        }
+    }
+
+      $this->query = $this->usermanagemodel->sendemailtosuper();
+      $too = $this->query[0]->emailid;
+      $firstname = $this->query[0]->firstname;
+      $lastname = $this->query[0]->lastname;
+
+      $message = 'Dear ' . $firstname . ' ' . $lastname . ',
+
+   The Company Name, ' . $company . ' account has cancelled.
+
+
+Regards,
+Quicksolar Admin';
+        $emailsubject = 'Company Account Has Cancelled';
+        $ses = new SimpleEmailService('AKIAIW7YQTRZBE4ISGGQ', 'm1Sl80yV4WMLxC2C1ysVos4+L9vvZcCtAlSGMQPh');
+        $ses->enableVerifyPeer(false);
+        $m = new SimpleEmailServiceMessage();
+        $m->addTo($too);
+        $m->setFrom('thunderpaste@gmail.com');
+        $m->setSubject($emailsubject);
+        $m->setMessageFromString($message);
+        $ses->enableVerifyPeer(false);
+
+        if ($ses->sendEmail($m) == TRUE) {
+         // echo "k" ;
+ }
+//      session_destroy();
+       // redirect('usermanage/cancelled', 'refresh');
+        $this->load->view("usermanage/cancelled");
+      log_message('info','************ cntrl-usermanage-cancelcompanyaccount-end ***************');
+    }
+
+ /*    public function sendemailnotification() {
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->load->view("usermanage/cancelled");
+     }  */
+
+    /* Edit Company */
+
+    public function editcompanyview() {
+        log_message('info','************ cntrl-usermanage-editcompanyview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editcompanyview();
+        $userinfo=$this->getSessionData('userinfo');
+        $companyinfo=$this->getSessionData('companyinfo');
+        $this->javascripts(array('usermanage/editcompanyview.js'));
+        $this->render("usermanage/editcompanyview", array('this->query'=>$this->query,'userinfo'=>$userinfo));
+        log_message('info','************ cntrl-usermanage-editcompanyview-end ***************');
+    }
+
+    public function editcompany() {
+        log_message('info','************ cntrl-usermanage-editcompany-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('html');
+        $this->load->helper('form');
+        $this->load->model('usermanage/usermanagemodel');
+
+        $value = $this->usermanagemodel->editcompany1();
+        $_GET['owner'] = $this->input->post('owner');
+        $_GET['companyid'] = $this->input->post('companyid');
+        $this->loadallcompany();
+        log_message('info','************ cntrl-usermanage-editcompany-end ***************');
+
+    }
+   /* function to edit company for company admin */
+     public function editcompany_sub() {
+        log_message('info','************ cntrl-usermanage-editcompany_sub-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $filename = $this->do_upload();
+        $uploadarray = isset($this->data) ? $this->data : 0;
+              // print_r($uploadarray);
+        $this->load->helper('html');
+        $this->load->helper('form');
+        $this->load->model('usermanage/usermanagemodel');
+         if(isset($_POST['txtcompanytype'])){
+        $txtcompanytype= $_POST['txtcompanytype'];
+        $_SESSION['txtcompanytype'] = $txtcompanytype;
+
+       // print_r($_SESSION['txtcompanytype']);
+        }
+        $_POST['dpdstatus']='1';
+
+        $_POST['txtcompanyid']=$this->input->post('companyid');
+
+        $value = $this->usermanagemodel->editcompany($uploadarray);
+
+     //calling dashboard controller method to reload Account settings page
+       $dashboard= new dashboard();
+       $dashboard->accountsett();
+        log_message('info','************ cntrl-usermanage-editcompany_sub-end ***************');
+
+    }
+     //function to upload an image to the company
+     public function do_upload(){
+
+        $config['upload_path'] = './uploads/';
+        $config['allowed_types'] = 'gif|jpg|jpeg|png';
+        $config['max_size'] = '4096';
+        $config['max_width'] = '0';
+        $config['max_height'] = '0';
+        $this->load->library('upload', $config);
+
+            if (!$this->upload->do_upload("userfile1")) {
+            $error = array('error' => $this->upload->display_errors());
+            print_r($error) ;
+            if (strcmp($error['error'], "You did not select a file to upload.") !== false) {
+                $this->data[] = "0";
+            }
+        } else {
+
+            $this->data[] = array('companylogo' => $this->upload->data());
+               }
+        }
+
+
+
+   //function to deleet companylogo
+function deleteimage(){
+$this->load->model('usermanage/usermanagemodel');
+   $this->query = $this->usermanagemodel->deletefile_data();
+  }
+
+
+ function getcompanytype(){
+ log_message('info','*********** cntrl-subscription-getprojects()-start- **************');
+ $this->setTemplate('usermanagement_sub');
+  $companyid = $_SESSION['companyID'];
+        //echo  $companyid;exit;
+ $this->companyid = $companyid;
+ $this->load->model('usermanage/usermanagemodel');
+ $this->query = $this->usermanagemodel->getcompanytype($this->companyid);
+ $this->load->view('usermanage/getcompanytype', array('this->query'=>$this->query));
+ log_message('info','*********** cntrl-subscription-getprojects()-end- **************');
+}
+
+
+/* Function to Auto populate privilege */
+
+    public function getprivilegecontr() {
+        log_message('info','************ cntrl-usermanage-getprivilegecontr-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $role = $this->input->post('role');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getprivilegemodel($role);
+        $this->load->view('usermanage/getprivilege',array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-getprivilegecontr-end ***************');
+    }
+    
+
+    /* Function to Auto populate Address */
+
+    public function getaddress() {
+        log_message('info','************ cntrl-usermanage-getaddress-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        //$company=$this->input->post('');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getaddressmodel();
+        $this->load->view('usermanage/getaddress', $this->query);
+        log_message('info','************ cntrl-usermanage-getaddress-end ***************');
+    }
+
+//Function to change the password .
+    public function getuserid() {
+        log_message('info','************ cntrl-usermanage-getuserid-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $data['userid'] = $_GET['userid'];
+        $this->load->view('usermanage/changepassword', $data);
+        log_message('info','************ cntrl-usermanage-getuserid-end ***************');
+    }
+
+    public function changepwdinpopup(){
+
+    $this->load->helper('form');
+    $this->load->helper('html');
+    $this->load->library('form_validation');
+    $this->load->model('usermanage/usermanagemodel');
+    $this->usermanagemodel->updatepwd();
+  }
+    public function changepwd() {
+        log_message('info','************ cntrl-usermanage-changepwd-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        $userid = $this->input->post('userid');
+        $this->form_validation->set_rules('currentpassword', 'password', 'required|callback_checkpwd');
+        $this->form_validation->set_rules('newpassword', 'New Password', 'required|min_length[6]|matches[confirmpassword]|callback_username|callback_currentpassword');
+        $this->form_validation->set_rules('confirmpassword', 'Confirm Password', 'required|min_length[6]');
+        $data['userid'] = $userid;
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $this->load->view('usermanage/changepassword', $data);
+        } else {
+            log_message('info','************ Validation True ***************');
+            $this->load->model('usermanage/usermanagemodel');
+            $this->usermanagemodel->updatepwd();
+            $this->load->view('usermanage/successpwd');
+        }
+        log_message('info','************ cntrl-usermanage-changepwd-end ***************');
+    }
+
+//function to check whether entered  current password is exist or not
+    public function checkpwd($str) {
+        log_message('info','************ cntrl-usermanage-checkpwd-start ***************');
+        $userid = $this->input->post('userid');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getpassword($userid);
+        $password = base64_decode($this->query[0]->password);
+        if ($str != $password) {
+            log_message('info','************ wrong current password entered  ***************');
+            $this->form_validation->set_message('checkpwd', 'Current Password is Wrong !');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-checkpwd-end ***************');
+    }
+
+    public function username($str) {
+        log_message('info','************ cntrl-usermanage-username-start ***************');
+        $userid = $this->input->post('userid');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getusername($userid);
+        $username = $this->query[0]->username;
+        if ($str == $username) {
+            log_message('info','************new password entered is identical to username ***************');
+            $this->form_validation->set_message('username', 'Username and New Password cannot be same.');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-username-end ***************');
+    }
+
+    public function currentpassword($str) {
+        log_message('info','************ cntrl-usermanage-currentpassword-start ***************');
+        $currentpassword = $this->input->post('currentpassword');
+        if ($str == $currentpassword) {
+            log_message('info','************ new password entered is identical to current password ***************');
+            $this->form_validation->set_message('currentpassword', 'Current Password and New password cannot be same.');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-currentpassword-end ***************');
+    }
+
+// Roles Section
+// Function to add Role
+
+    public function createrole() {
+        log_message('info','************ cntrl-usermanage-createrole-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        //$this->form_validation->set_rules('txtrolename','Role Name','required|is_unique[tblroles.rolename]');
+        $this->form_validation->set_rules('txtrolename', 'Role Name', 'required|callback_checkforrole');
+        $this->form_validation->set_rules('dpdstatus', 'Status', 'required|callback_dpdrolestatus');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $this->load->model('usermanage/usermanagemodel');
+            $this->javascripts(array('usermanage/addroleview.js '));
+            $this->render('usermanage/addroleview');
+        } else {
+            log_message('info','************ Validation True ***************');
+            $this->load->model('usermanage/usermanagemodel');
+            $this->usermanagemodel->addrolemodel();
+            $this->render("usermanage/successrole");
+        }
+        log_message('info','************ cntrl-usermanage-createrole-end ***************');
+    }
+
+// Function to Check unique Role and existing deleted Role .
+
+    function checkforrole() {
+        log_message('info','************ cntrl-usermanage-checkforrole-start ***************');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $unique = $this->usermanagemodel->checkuniquerole();
+        if ($unique == 'NOTEXIST') {
+            log_message('info','************ unique role doesnot exist  ***************');
+            return TRUE;
+        } else if ($unique == 'EXIST') {
+            log_message('info','************ unique role exist ***************');
+            $this->form_validation->set_message('checkforrole', 'The Role Name field must contain a unique value.');
+            return FALSE;
+        }
+        echo $flag = $this->usermanagemodel->checkuniquedeletedrole();
+        if ($flag == 'NOTEXIST') {
+             log_message('info','************ unique role doesnot exist in deleted roles list***************');
+            return TRUE;
+        } else if ($flag == 'ROLEEXIST') {
+            log_message('info','************ unique role doesnot exist in deleted roles list***************');
+            $this->form_validation->set_message('checkforrole', 'The Role Name field must contain a unique value.');
+            return FALSE;
+        } else if ($flag == 'ROLEDELETED') {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-checkforrole-end ***************');
+    }
+
+    public function dpdrolestatus($rolestatus) {
+        log_message('info','************ cntrl-usermanage-dpdrolestatus-start ***************');
+        //if no status is selected
+        if ($rolestatus === "0") {
+            log_message('info','************ role status not selected ***************');
+            $this->form_validation->set_message('dpdrolestatus', 'Select any one Status');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-dpdrolestatus-end ***************');
+    }
+
+// Function to view List of Roles, where Rolename is unique and primary key
+
+    public function loadrolestoview() {
+        log_message('info','************ cntrl-usermanage-loadrolestoview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadrolestoview();
+        $this->render('usermanage/loadrolestoview', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-loadrolestoview-end ***************');
+    }
+
+// Function to list all the roles to Edit
+    public function loadrolestoedit() {
+        log_message('info','************ cntrl-usermanage-loadrolestoedit-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadrolestoedit();
+        $this->render('usermanage/loadrolestoedit', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-loadrolestoedit-end ***************');
+    }
+
+// Function to edit Role , using rolename as a primary key.
+    public function editrole() {
+        log_message('info','************ cntrl-usermanage-editrole-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editrolemodel();
+        $this->javascripts(array('usermanage/editroleview.js'));
+        $this->render('usermanage/editroleview', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-editrole-end ***************');
+    }
+
+// Function to update Role after Edit.
+    public function updaterole() {
+        log_message('info','************ cntrl-usermanage-updaterole-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->updaterolemodel();
+        $this->loadrolestoedit();
+        log_message('info','************ cntrl-usermanage-updaterole-end ***************');
+    }
+
+// Function to view List of Roles to delete, where Rolename is unique and primary key
+
+    public function loadrolestodelete() {
+        log_message('info','************ cntrl-usermanage-loadrolestodelete-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->errormessage = "";
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadrolestodelete();
+        $this->render('usermanage/loadrolestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage) );
+        log_message('info','************ cntrl-usermanage-loadrolestodelete-end ***************');
+    }
+
+// Function to delete Role  using Rolename.
+    public function deleterole() {
+        log_message('info','************ cntrl-usermanage-deleterole-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $rolename = $this->input->post('txtrolename');
+        $this->flag = $this->usermanagemodel->deleterolemodel();
+        if ($this->flag == 0) {
+            $this->loadrolestodelete();
+            //$this->load->view('usermanage/deletesuccess');
+        } else if ($this->flag == 2) {
+            log_message('info','************ Role is Active and it cannot be deleted ***************');
+            $this->errormessage = "You Cannot delete this Active Role.";
+            $this->query = $this->usermanagemodel->loadrolestodelete();
+            $this->render('usermanage/loadrolestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        } else if ($this->flag == 1) {
+            log_message('info','************ Role has been Assigned to Some User and it cannot be deleted ***************');
+            $this->errormessage = "You Cannot delete this Role.It has been Assigned to Some User.";
+            $this->query = $this->usermanagemodel->loadrolestodelete();
+            $this->render('usermanage/loadrolestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+                    }
+        log_message('info','************ cntrl-usermanage-deleterole-end ***************');
+    }
+
+// Privileges Section
+// Function to add Privilege
+    public function createprivilege() {
+        log_message('info','************ cntrl-usermanage-createprivilege-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('txtprivilegename', 'Privilege Name', 'required|is_unique[tblprivileges.privilegename]');
+        $this->form_validation->set_rules('dpdstatus', 'Status', 'required|callback_dpdprivilegestatus');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $this->javascripts(array('usermanage/addprivilegeview.js'));
+            $this->render('usermanage/addprivilegeview');
+        } else {
+            log_message('info','************ Validation True ***************');
+            $this->load->model('usermanage/usermanagemodel');
+            $this->usermanagemodel->addprivilegemodel();
+            $this->load->view("usermanage/successprivilage");
+        }
+        log_message('info','************ cntrl-usermanage-createprivilege-end ***************');
+    }
+
+//Function to Check unique Privilege
+
+    public function checkforprivilege() {
+        log_message('info','************ cntrl-usermanage-checkforprivilege-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $unique = $this->usermanagemodel->checkuniqueprivilege();
+        if ($unique == 'NOTEXIST') {
+            return TRUE;
+        } else if ($unique == 'EXIST') {
+            $this->form_validation->set_message('checkforprivilege', 'The Privilege Name field must contain a unique value.');
+            return FALSE;
+        }
+        $flag = $this->usermanagemodel->checkuniquedeletedprivilege();
+        if ($flag == 'NOTEXIST') {
+            return TRUE;
+        } else if ($flag == 'EXIST') {
+            $this->form_validation->set_message('checkforprivilege', 'The Privilege Name field must contain a unique value.');
+            return FALSE;
+        } else if ($flag == 'DELETED') {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-checkforprivilege-end ***************');
+    }
+
+    public function dpdprivilegestatus($privilegestatus) {
+      log_message('info','************ cntrl-usermanage-dpdprivilegestatus-start ***************');
+        //if no status is selected
+        if ($privilegestatus === "0") {
+            log_message('info','************ Privilege Status has been not Selected ***************');
+            $this->form_validation->set_message('dpdprivilegestatus', 'Select any one Status');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+       log_message('info','************ cntrl-usermanage-dpdprivilegestatus-end ***************');
+    }
+
+// Function to view List of Roles, where Rolename is unique
+
+    public function loadprivilegestoview() {
+        log_message('info','************ cntrl-usermanage-loadprivilegestoview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegestoview();
+        $this->render('usermanage/loadprivilegestoview', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-loadprivilegestoview-end ***************');
+    }
+
+// Function to list all the Privileges to Edit
+    public function loadprivilegestoedit() {
+        log_message('info','************ cntrl-usermanage-loadprivilegestoedit-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegestoedit();
+        $this->render('usermanage/loadprivilegestoedit', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-loadprivilegestoedit-end ***************');
+    }
+
+// Function to edit Privilege , using privilegename.
+    public function editprivilege() {
+        log_message('info','************ cntrl-usermanage-editprivilege-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editprivilegemodel();
+        $this->javascripts(array('usermanage/editprivilegeview.js'));
+        $this->render('usermanage/editprivilegeview');
+        log_message('info','************ cntrl-usermanage-editprivilege-end ***************');
+    }
+
+// Function to update Privilege after Edit.
+    public function updateprivilege() {
+        log_message('info','************ cntrl-usermanage-updateprivilege-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->updateprivilegemodel();
+        $this->loadprivilegestoedit();
+        log_message('info','************ cntrl-usermanage-updateprivilege-end ***************');
+    }
+
+// Function to view List of Privileges to delete, where Privilegename is unique
+
+    public function loadprivilegestodelete() {
+        log_message('info','************ cntrl-usermanage-loadprivilegestodelete-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->errormessage = "";
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegestodelete();
+        $this->render('usermanage/loadprivilegestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        log_message('info','************ cntrl-usermanage-loadprivilegestodelete-end ***************');
+    }
+
+// Function to delete Privilege .
+    public function deleteprivilege() {
+        log_message('info','************ cntrl-usermanage-deleteprivilege-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $privilegename = $this->input->post('txtprivilegename');
+        $this->flag = $this->usermanagemodel->deleteprivilegemodel();
+        if ($this->flag == 0) {
+            $this->loadprivilegestodelete();
+            //$this->load->view('usermanage/deletesuccess');
+        } else if ($this->flag == 2) {
+            log_message('info','************ Privilege is Active and it cannot be deleted ***************');
+            $this->errormessage = "You Cannot delete this Active Privilege.";
+            $this->query = $this->usermanagemodel->loadprivilegestodelete();
+            $this->render('usermanage/loadprivilegestodelete',array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        } else if ($this->flag == 1) {
+            log_message('info','************ Privilege has been assigned to some user and it cannot be deleted ***************');
+            $this->errormessage = "You Cannot delete this Privilege.It has been Assigned to Some User.";
+            $this->query = $this->usermanagemodel->loadprivilegestodelete();
+            $this->render('usermanage/loadprivilegestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        }
+        log_message('info','************ cntrl-usermanage-deleteprivilege-end ***************');
+    }
+
+    /* Feature */
+
+    public function createfeature() {
+        log_message('info','************ cntrl-usermanage-createfeature-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('txtfeaturename', 'Feature Name ', 'Feature Name is required');
+        $this->form_validation->set_rules('status', 'Status', 'Status should required');
+        $this->form_validation->set_rules('txtdescription', 'Description', 'Description is required');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $this->render('usermanage/addfeaturesview');
+        } else {
+            log_message('info','************ Validation True ***************');
+            $this->load->model('usermanage/usermanagemodel');
+            $this->usermanagemodel->createfeature();
+            $this->render('usermanage/success');
+        }
+        log_message('info','************ cntrl-usermanage-createfeature-end ***************');
+    }
+
+    public function viewfeature() {
+        log_message('info','************ cntrl-usermanage-viewfeature-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->viewfeature();
+        $this->render("usermanage/featureview", array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-viewfeature-end ***************');
+    }
+
+    public function fullviewfeatures() {
+        log_message('info','************ cntrl-usermanage-fullviewfeatures-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->fullviewfeatures();
+        //echo $this->query[0]->featurename;
+        $this->render("usermanage/featuresfullview", array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-fullviewfeatures-end ***************');
+    }
+
+    public function loadallfeatures() {
+        log_message('info','************ cntrl-usermanage-loadallfeatures-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadallfeatures();
+        $this->render("usermanage/editfeatureload",array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-loadallfeatures-end ***************');
+    }
+
+    public function editfeatureview() {
+        log_message('info','************ cntrl-usermanage-editfeatureview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editfeatureview();
+        $this->render("usermanage/editfeatureview", array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-editfeatureview-end ***************');
+    }
+
+    public function editfeature() {
+        log_message('info','************ cntrl-usermanage-editfeature-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $value = $this->usermanagemodel->editfeature();
+        $this->render('usermanage/editfeaturesuccess');
+         log_message('info','************ cntrl-usermanage-editfeature-end ***************');
+    }
+
+    public function deletefeatureview() {
+        log_message('info','************ cntrl-usermanage-deletefeatureview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->deletefeatureview();
+        $this->render("usermanage/deletefeatureview", array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-deletefeatureview-end ***************');
+    }
+
+    public function deletefeatureshow() {
+        log_message('info','************ cntrl-usermanage-deletefeatureshow-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->featureview();
+        $this->load->view("usermanage/deletefeaturefullview", $this->query);
+        $this->flag = $this->usermanagemodel->deletefeature();
+        if ($this->flag == 0) {
+            log_message('info','************ deleted feature successfully ***************');
+            $this->render('usermanage/deletesuccess');
+        } elseif ($this->flag == 1) {
+            log_message('info','************ Feature cannot be deleted as it is in use ***************');
+            $this->errormessage = "You Cannot delete this Feature.It is in Use.";
+            $this->query = $this->usermanagemodel->deletefeatureview();
+            $this->render('usermanage/deletefeatureview', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage) );
+        }
+        log_message('info','************ cntrl-usermanage-deletefeatureshow-end ***************');
+    }
+
+    public function deletefeature() {
+        log_message('info','************ cntrl-usermanage-deletefeature-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->row = $this->usermanagemodel->deletefeature();
+        $this->flag = $this->usermanagemodel->deletefeature();
+        if ($this->flag == 0) {
+            log_message('info','************  deleted feature successfully  ***************');
+            $this->render('usermanage/deletesuccess');
+        } elseif ($this->flag == 1) {
+            log_message('info','************   Feature cannot be deleted as it is in use  ***************');
+            $this->errormessage = "You Cannot delete this Feature.It is in Use.";
+            $this->query = $this->usermanagemodel->deletefeatureview();
+            $this->render('usermanage/deletefeaturefullview', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        }
+        log_message('info','************ cntrl-usermanage-deletefeature-end ***************');
+    }
+
+    /* Resource */
+
+    public function createresource() {
+        log_message('info','************ cntrl-usermanage-createresource-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('txtresourcename', 'Resource Name ', 'required');
+        $this->form_validation->set_rules('txtlocation', 'Location', 'required');
+        $this->form_validation->set_rules('txtdescription', 'Description', 'required');
+        if ($this->form_validation->run() === FALSE) {
+            $this->render('usermanage/addresourceview');
+        } else {
+            $this->load->model('usermanage/usermanagemodel');
+            $this->usermanagemodel->createresource();
+            //$this->viewresource();
+            $this->render('usermanage/successresource');
+        }
+        log_message('info','************ cntrl-usermanage-createresource-end ***************');
+    }
+
+    public function viewresource() {
+        log_message('info','************ cntrl-usermanage-viewresource-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->viewresource();
+        $this->render("usermanage/resourceview",  array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-viewresource-end ***************');
+    }
+
+//show full view
+    public function showfullresource() {
+        log_message('info','************ cntrl-usermanage-showfullresource-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->showfullresource();
+        $this->render("usermanage/resourcefullview",  array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-showfullresource-end ***************');
+    }
+
+    public function loadallresource() {
+        log_message('info','************ cntrl-usermanage-loadallresource-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadallresource();
+        $this->render("usermanage/editresourceload",  array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-loadallresource-end ***************');
+    }
+
+    public function editresourceview() {
+        log_message('info','************ cntrl-usermanage-editresourceview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editresourceview();
+        $this->render("usermanage/editresourceview",  array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-editresourceview-end ***************');
+    }
+
+    public function editresource() {
+        log_message('info','************ cntrl-usermanage-editresource-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $value = $this->usermanagemodel->editresource();
+        $this->loadallresource();
+        log_message('info','************ cntrl-usermanage-editresource-end ***************');
+    }
+
+    public function deleteresourceview() {
+        log_message('info','************ cntrl-usermanage-deleteresourceview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->deleteresourceview();
+        $this->render("usermanage/deleteresourceview",  array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-deleteresourceview-end ***************');
+    }
+
+    public function deleteresourceshow() {
+        log_message('info','************ cntrl-usermanage-deleteresourceshow-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->deleteresourceshow();
+        //$this->deleteresourceview();
+        $this->render("usermanage/deleteresourcefullview",  array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-deleteresourceshow-end ***************');
+    }
+
+    public function deleteresource() {
+        log_message('info','************ cntrl-usermanage-deleteresource-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->flag = $this->usermanagemodel->deleteresource();
+        if ($this->flag == 0) {
+            $this->deleteresourceview();
+            //$this->load->view('usermanage/deletesuccess');
+        } elseif ($this->flag == 1) {
+            log_message('info','************ Resource cannot be deleted as it is in use ***************');
+            $this->errormessage = "You Cannot delete this Resource.It is in Use.";
+            $this->query = $this->usermanagemodel->deleteresourceview();
+            $this->render('usermanage/deleteresourcefullview',  array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        }
+        log_message('info','************ cntrl-usermanage-deleteresource-end ***************');
+    }
+
+// PrivilegeFeature Section
+    /* Function to Add PrivilegeFeature.
+      This function will get the Privilegename from tblprivileges
+      and will get the Featurename from tblfeatures */
+
+
+//Custom Validation
+    public function dpdpriv() {
+        log_message('info','************ cntrl-usermanage-dpdpriv-start ***************');
+        //if no role is selected
+        $priv = $this->input->post('dpdprivilegename');
+        if ($priv === "0") {
+            log_message('info','************ Privilege not selected ***************');
+            $this->form_validation->set_message('dpdpriv', 'Select any one Privilege');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-dpdpriv-end ***************');
+    }
+
+    public function dpdresource() {
+        log_message('info','************ cntrl-usermanage-dpdresource-start ***************');
+        //if no role is selected
+        $resource = $this->input->post('dpdfeaturename');
+        if ($resource === "0") {
+            $this->form_validation->set_message('dpdresource', 'Select any one Resource');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-dpdresource-end ***************');
+    }
+
+//function to create PRIVILEGE FEATURE - start
+
+    public function createprivilegefeatures() {
+        log_message('info','************ cntrl-usermanage-createprivilegefeatures-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('dpdprivilege', 'Privilege', 'callback_dpdpriv');
+        $this->form_validation->set_rules('dpdresource', 'Resource', 'callback_dpdresource');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $this->priv = $this->usermanagemodel->getprivilegeforpf();
+            $this->feature = $this->usermanagemodel->getfeatureforpf();
+            $this->javascripts(array('usermanage/addprivilegefeaturesview.js'));
+            $this->render('usermanage/addprivilegefeaturesview', array('this->priv'=>$this->priv,'this->feature'=>$this->feature));
+        } else {
+            log_message('info','************Validation True. ***************');
+            //form processing
+            $selected = array();
+            if (isset($_POST['right-select'])) {
+                log_message('info','************ copying selected features into array ***************');
+                $selected = $_POST['right-select'];
+            }
+            $this->usermanagemodel->createprivilegefeatures($selected);
+            $this->priv = $this->usermanagemodel->getprivilegeforpf();
+            $this->feature = $this->usermanagemodel->getfeatureforpf();
+            $this->render('usermanage/addprivilegefeaturesview', array('this->priv'=>$this->priv,'this->feature'=>$this->feature));
+            $this->render('usermanage/successprivilagefeatures');
+        }
+        log_message('info','************ cntrl-usermanage-createprivilegefeatures-end ***************');
+    }
+
+    public function getAvailablefeature() {
+        log_message('info','************ cntrl-usermanage-getAvailablefeature-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getAvailablefeature();
+        $this->load->view('usermanage/getAvailablefeature', $this->query);
+        log_message('info','************ cntrl-usermanage-getAvailablefeature-end ***************');
+    }
+
+    public function getSelectedfeature() {
+        log_message('info','************ cntrl-usermanage-getSelectedfeature-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getSelectedfeature();
+        $this->load->view('usermanage/getSelectedfeature', $this->query);
+        log_message('info','************ cntrl-usermanage-getSelectedfeature-end ***************');
+    }
+
+    public function loadprivilegefeaturestoview() {
+        log_message('info','************ cntrl-usermanage-loadprivilegefeaturestoview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegefeaturestoview();
+        $this->render('usermanage/loadprivilegefeaturestoview', $this->query);
+        log_message('info','************ cntrl-usermanage-loadprivilegefeaturestoview-end ***************');
+    }
+
+    public function loadprivilegefeaturestoedit() {
+        log_message('info','************ cntrl-usermanage-loadprivilegefeaturestoedit-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegefeaturestoedit();
+        $this->render('usermanage/loadprivilegefeaturestoedit', $this->query);
+        log_message('info','************ cntrl-usermanage-loadprivilegefeaturestoedit-end ***************');
+    }
+
+// Function to Edit PrivilegeFeature.
+    public function editprivilegefeatures() {
+        log_message('info','************ cntrl-usermanage-editprivilegefeatures-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editprivilegefeaturemodel();
+        $this->priv = $this->usermanagemodel->loadprivileges();
+        $this->feature = $this->usermanagemodel->loadfeatures();
+        $this->render('usermanage/editprivilegefeaturesview', array('this->query'=>$this->query, 'this->priv'=>$this->priv,'this->feature'=>$this->feature));
+        log_message('info','************ cntrl-usermanage-editprivilegefeatures-end ***************');
+    }
+
+// Function to Update PrivilegeFeature after Edit.
+    public function updateprivilegefeatures() {
+        log_message('info','************ cntrl-usermanage-updateprivilegefeatures-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->updateprivilegefeaturemodel();
+        $this->render('editsuccess');
+        log_message('info','************ cntrl-usermanage-updateprivilegefeatures-end ***************');
+    }
+    
+
+// Function to view List of Privileges to delete, where Privilegename is unique
+
+    public function loadprivilegefeaturestodelete() {
+        log_message('info','************ cntrl-usermanage-loadprivilegefeaturestodelete-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->errormessage = "";
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegefeaturestodelete();
+        $this->render('usermanage/loadprivilegefeaturestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        log_message('info','************ cntrl-usermanage-loadprivilegefeaturestodelete-end ***************');
+    }
+
+// Function to delete Privilege  using Privilegename.
+    public function deleteprivilegefeatures() {
+        log_message('info','************ cntrl-usermanage-deleteprivilegefeatures-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $privilegename = $this->input->post('txtprivilegename');
+        $this->flag = $this->usermanagemodel->deleteprivilegefeaturemodel();
+        if ($this->flag == 0) {
+            log_message('info','************ privilegefeature deleted successfully ***************');
+            $this->render('usermanage/deletesuccess');
+        } elseif ($this->flag == 1) {
+            log_message('info','************ You Cannot Delete this PrivilegeFeature. It has been Assigned to Some User.  ***************');
+            $this->errormessage = "You Cannot Delete this PrivilegeFeature. It has been Assigned to Some User.";
+            $this->query = $this->usermanagemodel->loadprivilegefeaturestodelete();
+            $this->render('usermanage/loadprivilegefeaturestodelete', array('this->query'=>$this->query, 'this->errormessage'=>$this->errormessage));
+        }
+        log_message('info','************ cntrl-usermanage-deleteprivilegefeatures-end ***************');
+    }
+
+// PrivilegeResource Section
+    /* Function to Add PrivilegeResource.
+      This function will get the Privilegename from tblprivileges
+      and will get the Resourcename from tblresources */
+
+
+//Custom Validation method for privilege is called from PrivilegeFeature Section
+
+
+
+    /* public function dpdresource() {
+      //if no role is selected
+      $resource=$this->input->post('dpdfeaturename');
+      if ($resource === "0") {
+      $this->form_validation->set_message('dpdresource', 'Select any one Resource');
+      return FALSE;
+      }
+      else {
+      return TRUE;
+      }
+      } */
+
+
+
+    public function createprivilegeresources() {
+        log_message('info','************ cntrl-usermanage-createprivilegeresources-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('dpdprivilege', 'Privilege', 'callback_dpdpriv');
+        $this->form_validation->set_rules('dpdresource', 'Resource', 'callback_dpdresource');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $this->priv = $this->usermanagemodel->getprivilegeforpr();
+            $this->resource = $this->usermanagemodel->getresourceforpfr();
+            $this->render('usermanage/addprivilegeresourcesview', array('this->priv'=>$this->priv,'this->resource'=>$this->resource));
+        } else {
+            log_message('info','************ Validation True ***************');
+            //form processing
+            $selected = array();
+            if (isset($_POST['right-select'])) {
+                log_message('info','************ Copying selected resources to an array ***************');
+                $selected = $_POST['right-select'];
+            }
+            $this->usermanagemodel->createprivilegeresources($selected);
+            $this->priv = $this->usermanagemodel->getprivilegeforpr();
+            $this->resource = $this->usermanagemodel->getresourceforpfr();
+            $this->render('usermanage/addprivilegeresourcesview',array('this->priv'=>$this->priv,'this->resource'=>$this->resource));
+            $this->load->view('usermanage/successprivilageresource');
+        }
+        log_message('info','************ cntrl-usermanage-createprivilegeresources-end ***************');
+    }
+
+//DON'T USE THIS:======>Start function to Createuielements
+    public function createuielements() {
+        log_message('info','************ cntrl-usermanage-createuielements-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('dpdprivilege', 'Privilege', 'callback_dpdpriv');
+        $this->form_validation->set_rules('dpdresource', 'Resource', 'callback_dpdresource');
+        if ($this->form_validation->run() === FALSE) {
+            log_message('info','************ Validation False ***************');
+            $this->rolename = $this->usermanagemodel->getuielementforpr();
+            $this->uielement = $this->usermanagemodel->getuielementforpfr();
+            $this->javascripts(array('usermanage/addprivilegeresourcesview.js'));
+            $this->render('usermanage/addprivilegeresourcesview', array('this->rolename'=>$this->rolename, 'this->uielement'=>$this->uielement));
+        } else {
+            log_message('info','************ Validation True ***************');
+            //form processing
+            $selected = array();
+            if (isset($_POST['right-select'])) {
+                log_message('info','************ Copying selected uielements to an array ***************');
+                $selected = $_POST['right-select'];
+            }
+            $this->usermanagemodel->createprivilegeresources($selected);
+            $this->render('success');
+        }
+        log_message('info','************ cntrl-usermanage-createuielements-end ***************');
+    }
+
+//End function to Createuielements
+
+    public function getAvailableresource() {
+        log_message('info','************ cntrl-usermanage-getAvailableresource-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getAvailableresource();
+        $this->load->view('usermanage/getAvailableresource', $this->query);
+        log_message('info','************ cntrl-usermanage-getAvailableresource-end ***************');
+    }
+
+    public function getSelectedresource() {
+        log_message('info','************ cntrl-usermanage-getSelectedresource-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getSelectedresource();
+        $this->load->view('usermanage/getSelectedresource', $this->query);
+        log_message('info','************ cntrl-usermanage-getSelectedresource-end ***************');
+    }
+
+    public function loadprivilegeresourcestoview() {
+        log_message('info','************ cntrl-usermanage-loadprivilegeresourcestoview-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegeresourcestoview();
+        $this->render('usermanage/loadprivilegeresourcestoview', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-loadprivilegeresourcestoview-end ***************');
+    }
+
+    public function loadprivilegeresourcestoedit() {
+        log_message('info','************ cntrl-usermanage-loadprivilegeresourcestoedit-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegeresourcestoedit();
+        $this->render('usermanage/loadprivilegeresourcestoedit', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-loadprivilegeresourcestoedit-end ***************');
+    }
+
+// Function to Edit PrivilegeResource.
+    public function editprivilegeresources() {
+        log_message('info','************ cntrl-usermanage-editprivilegeresources-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editprivilegeresourcemodel();
+        $this->priv = $this->usermanagemodel->loadprivileges();
+        $this->resource = $this->usermanagemodel->loadresources();
+        $this->javascripts(array('usermanage/editprivilegeresourcesview.js'));
+        $this->render('usermanage/editprivilegeresourcesview', array('this->query'=>$this->query,'this->priv'=>$this->priv,'this->resource'=>$this->resource));
+        log_message('info','************ cntrl-usermanage-editprivilegeresources-end ***************');
+    }
+
+// Function to Update PrivilegeResource after Edit.
+    public function updateprivilegeresources() {
+        log_message('info','************ cntrl-usermanage-updateprivilegeresources-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->updateprivilegeresourcemodel();
+        $this->loadprivilegeresourcestoedit();
+        log_message('info','************ cntrl-usermanage-updateprivilegeresources-start ***************');
+    }
+
+// Function to view List of PrivilegeResources to delete
+    public function loadprivilegeresourcestodelete() {
+        log_message('info','************ cntrl-usermanage-loadprivilegeresourcestodelete-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->errormessage = "";
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadprivilegeresourcestodelete();
+        $this->render('usermanage/loadprivilegeresourcestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        log_message('info','************ cntrl-usermanage-loadprivilegeresourcestodelete-end ***************');
+    }
+
+// Function to delete PrivilegeResource .
+    public function deleteprivilegeresources() {
+        log_message('info','************ cntrl-usermanage-deleteprivilegeresources-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $privilegename = $this->input->post('txtprivilegename');
+        $this->flag = $this->usermanagemodel->deleteprivilegeresourcemodel();
+        if ($this->flag == 0) {
+            log_message('info','************ Privilegeresources deleted successfully ***************');
+            $this->render('usermanage/deletesuccess');
+        } elseif ($this->flag == 1) {
+            log_message('info','************ You Cannot Delete this PrivilegeResource. It has been Assigned to Some User ***************');
+            $this->errormessage = "You Cannot Delete this PrivilegeResource. It has been Assigned to Some User.";
+            $this->query = $this->usermanagemodel->loadprivilegeresourcestodelete();
+            $this->render('usermanage/loadprivilegeresourcestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        }
+        log_message('info','************ cntrl-usermanage-deleteprivilegeresources-end ***************');
+    }
+
+// RolePrivilege Section
+    /* Function to Add olePrivilege.
+      This function will get the Privilegename from tblprivileges
+      and will get the rolename from tblroles */
+
+//Custom Validation method for privilege is called from PrivilegeFeature Section
+//Custom Validationmethod for rolename
+    public function dpdroleRP() {
+        log_message('info','************ cntrl-usermanage-dpdroleRP-start ***************');
+        //if no role is selected
+        $resource = $this->input->post('dpdrolename');
+        if ($resource === "0") {
+            log_message('info','************ Role not selected ***************');
+            $this->form_validation->set_message('dpdroleRP', 'Select any one Role');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+        log_message('info','************ cntrl-usermanage-dpdroleRP-end ***************');
+    }
+
+    public function createroleprivileges() {
+        log_message('info','************ cntrl-usermanage-createroleprivileges-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('dpdprivilege', 'Privilege', 'callback_dpdpriv');
+        $this->form_validation->set_rules('dpdresource', 'Role', 'callback_dpdroleRP');
+        if ($this->form_validation->run() === FALSE) {
+            $this->priv = $this->usermanagemodel->getprivilegeforpr();
+            $this->role = $this->usermanagemodel->getroleforRP();
+            $this->javascripts(array('usermanage/addroleprivilegesview.js'));
+            $this->render('usermanage/addroleprivilegesview', array('this->priv'=>$this->priv,'this->role'=>$this->role));
+        } else {
+            //form processing
+            $selected = array();
+            if (isset($_POST['right-select'])) {
+                $selected = $_POST['right-select'];
+            }
+            $this->usermanagemodel->createroleprivileges($selected);
+            $this->priv = $this->usermanagemodel->getprivilegeforpr();
+            $this->role = $this->usermanagemodel->getroleforRP();
+            $this->javascripts(array('usermanage/addroleprivilegesview.js'));
+            $this->render('usermanage/addroleprivilegesview',array('this->priv'=>$this->priv,'this->role'=>$this->role));
+            $this->render('usermanage/successroleprivilage');
+        }
+        log_message('info','************ cntrl-usermanage-createroleprivileges-end ***************');
+    }
+
+    public function getAvailableprivilege() {
+    	log_message('info','************ cntrl-usermanage-getAvailableprivilege-start ***************');
+        $this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getAvailableprivilege();
+        $this->load->view('usermanage/getAvailableprivilege', array('this->query'=>$this->query));
+        log_message('info','************ cntrl-usermanage-getAvailableprivilege-end ***************');
+    }
+
+    public function getSelectedprivilege() {
+    	log_message('info','************ cntrl-usermanage***************');
+		$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getSelectedprivilege();
+        $this->load->view('usermanage/getSelectedprivilege', array('this->query'=>$this->query));
+    }
+
+    public function loadroleprivilegestoview() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadroleprivilegestoview();
+        $this->render('usermanage/loadroleprivilegestoview', array('this->query'=>$this->query));
+    }
+
+    public function loadroleprivilegestoedit() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadroleprivilegestoedit();
+        $this->render('usermanage/loadroleprivilegestoedit', array('this->query'=>$this->query));
+    }
+
+// Function to Edit Roleprivilege.
+    public function editroleprivileges() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editroleprivilegemodel();
+        $this->priv = $this->usermanagemodel->loadprivileges();
+        $this->role = $this->usermanagemodel->loadroles();
+        $this->javascripts(array('usermanage/editroleprivilegesview.js'));
+        $this->render('usermanage/editroleprivilegesview', array('this->query'=>$this->query,'this->priv'=>$this->priv,'this->role'=>$this->role));
+    }
+
+// Function to Update Roleprivilege after Edit.
+    public function updateroleprivileges() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->updateroleprivilegemodel();
+         $this->render('editsuccess');
+    }
+
+// Function to view List of Roleprivileges to delete.
+    public function loadroleprivilegestodelete() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->errormessage = "";
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadroleprivilegestodelete();
+        
+        $this->render('usermanage/loadroleprivilegestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+    }
+
+// Function to delete Roleprivileges .
+    public function deleteroleprivileges() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->flag = $this->usermanagemodel->deleteroleprivilegemodel();
+        if ($this->flag == 0) {
+            $this->render('usermanage/deletesuccess');
+        } elseif ($this->flag == 1) {
+            $this->errormessage = "You Cannot Delete this RolePrivilege. It has been Assigned to Some User..";
+            $this->query = $this->usermanagemodel->loadroleprivilegestodelete();
+            $this->render('usermanage/loadroleprivilegestodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        }
+    }
+
+// UI Element Confuguration Section
+    public function loadcreateconfigUI() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->uielement = $this->usermanagemodel->getuielements();
+        $this->role = $this->usermanagemodel->loadroles();
+        $this->rolename=$_GET['role'];
+        $this->javascripts(array('usermanage/addconfigurationview.js'));
+        $this->render('usermanage/addconfigurationview', array('this->uielement'=>$this->uielement,'this->role'=>$this->role,'this->rolename'=>$this->rolename));
+    }
+
+    public function createconfigUI() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $_GET['role'] = $this->input->post('role');
+        $this->rolename=$_GET['role'];
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('dpdrolename', 'Privilege', 'callback_dpdpriv');
+        $this->form_validation->set_rules('dpdresource', 'Role', 'callback_dpdroleRP');
+        if ($this->form_validation->run() === FALSE) {
+            $this->uielement = $this->usermanagemodel->getuielements();
+            $this->role = $this->usermanagemodel->loadroles();
+            $this->javascripts(array('usermanage/addconfigurationview.js'));
+            $this->render('usermanage/addconfigurationview', array('this->uielement'=>$this->uielement,'this->role'=>$this->role));
+        } else {
+            //form processing
+            $selected = array();
+            if (isset($_POST['right-select'])) {
+                $selected = $_POST['right-select'];
+            }
+            $this->usermanagemodel->createconfigUI($selected);
+            $this->uielement = $this->usermanagemodel->getuielements();
+            $this->role = $this->usermanagemodel->loadroles();
+            $this->rolename=$_POST['role'];
+            $this->javascripts(array('usermanage/addconfigurationview.js'));
+            $this->render('usermanage/addconfigurationview', array('this->uielement'=>$this->uielement,'this->role'=>$this->role));
+            
+        }
+    }
+
+    public function loadCreateconfigafteredit($role) {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $_GET['role'] = $role;
+        $this->load->model('usermanage/usermanagemodel');
+        $this->uielement = $this->usermanagemodel->getuielements();
+        $this->role = $this->usermanagemodel->loadroles();
+  
+        $this->javascripts(array('usermanage/addconfigurationview.js'));
+        $this->render('usermanage/addconfigurationview', array('this->uielement'=>$this->uielement,'this->role'=>$this->role));
+    }
+
+    public function getAvailableuielement() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getAvailableuielement();
+        $this->load->view('usermanage/getAvailableuielements', array('this->query'=>$this->query));
+    }
+
+    public function getSelecteduielement() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->getSelecteduielement();
+        $this->load->view('usermanage/getSelecteduielements', array('this->query'=>$this->query));
+    }
+
+    public function loadconfigUItoview() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadconfigUItoview();
+        $this->render('usermanage/loadconfiguretoview', array('this->query'=>$this->query));
+    }
+
+    public function loadconfigUItoedit() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadconfigUItoedit();
+        $this->render('usermanage/loadconfiguretoedit', array('this->query'=>$this->query));
+    }
+
+// Function to Edit configuration.
+    public function editconfigUI() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->editconfigUImodel();
+        $this->uielement = $this->usermanagemodel->getuielements();
+        $this->role = $this->usermanagemodel->loadroles();
+        $this->javascripts(array('usermanage/editconfigureview.js'));
+        $this->render('usermanage/editconfigureview', array('this->query'=>$this->query,'this->uielement'=>$this->uielement,'this->role'=> $this->role) );
+    }
+
+// Function to Update configuration after Edit.
+    public function updateconfigUI() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->updateconfigUImodel();
+        $this->render('editsuccess');
+    }
+
+// Function to view List of Roleprivileges to delete.
+    public function loadconfigUItodelete() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->errormessage = "";
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->query = $this->usermanagemodel->loadconfigUItodelete();
+        $this->render('usermanage/loadconfiguretodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+    }
+
+// Function to delete Roleprivileges .
+    public function deleteconfigUI() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+// $privilegename=$this->input->post('txtprivilegename');
+        $this->flag = $this->usermanagemodel->deleteconfigUImodel();
+        if ($this->flag == 0) {
+            $this->render('usermanage/deletesuccess');
+        } elseif ($this->flag == 1) {
+            $this->errormessage = "You Cannot Delete this UI Configuration. It has been Assigned to Some User..";
+            $this->query = $this->usermanagemodel->loadconfigUItodelete();
+            
+            $this->render('usermanage/loadconfiguretodelete', array('this->query'=>$this->query,'this->errormessage'=>$this->errormessage));
+        }
+    }
+
+    /*   Project Distribution  section -start  */
+
+//Function to save distributed projects
+    public function createdistributeprojects() {
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->model('usermanage/usermanagemodel');
+
+        //validation
+         //$this->checkfromuser($this->input->post('fromuser'));
+         //$this->checktouser($this->input->post('touser'));
+/*     $this->load->library('form_validation');
+       $this->form_validation->set_rules('dpduser_sender', 'From User', 'callback_checkfromuser|callback_checkequality');
+        $this->form_validation->set_rules('dpduser_receiver', 'To User', 'callback_checktouser|callback_checkequality');
+        if ($this->form_validation->run() === FALSE) {
+            $_GET['companyid'] = $this->input->post('companyid');
+            $this->users = $this->usermanagemodel->getusers();
+            $this->load->view('usermanage/distributeprojectview', $this->users);
+        } else {*/
+            $this->load->model('usermanage/usermanagemodel');
+            $selected = array();
+            if (isset($_POST['right-select'])) {
+                $selected = $_POST['right-select'];
+                $selectedcount = count($selected);
+                //returning if no projects are there to distribute
+
+                $this->usermanagemodel->createdistributeprojects($selected, $selectedcount);
+
+                //$_GET['companyid'] = $this->input->post('companyid');
+                //$this->users = $this->usermanagemodel->getusers();
+                $this->flag = 'success';
+                echo $this->flag;
+                return;
+                //$this->load->view('usermanage/distributeprojectview', $this->users, $this->flag);
+            }
+        //}
+    }
+
+    /*  custom validation -start */
+
+    public function checkfromuser($fromuser) {
+
+        if ($fromuser == "") {
+            $this->form_validation->set_message('checkfromuser', 'From User Field is Required');
+            return FALSE;
+        } else if ($this->input->post('dpduser_sender') == $this->input->post('dpduser_receiver')) {
+            $this->form_validation->set_message('checkfromuser', 'From User and  To User Should not be Same');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+    }
+
+    public function checktouser($touser) {
+        if ($touser == "") {
+            $this->form_validation->set_message('checktouser', 'To User Field is Required');
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+    }
+
+    public function checkequality() {
+        if ($this->input->post('dpduser_receiver') == $this->input->post('dpduser_receiver')) {
+            $this->form_validation->set_message('checkequality', 'From User and  To User Should not be Equal');
+        }
+    }
+
+    /*  custom validation -end */
+
+    public function loaddistributeproject() {
+    	log_message('info','************ cntrl-usermanage-loaddistributeproject***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->helper("url");
+
+        $this->load->model('usermanage/usermanagemodel');
+        $this->users = $this->usermanagemodel->getusers();
+        $this->javascripts(array('usermanage/distributeprojectview.js'));
+        $this->load->view('usermanage/distributeprojectview',array('this->users'=>$this->users) );
+
+    }
+
+//function to use dirctly from dashboard
+
+public function loaddistributeproject_sub(){
+		log_message('info','************ cntrl-usermanage***************');
+		$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->helper("url");
+        $this->companyid=$_GET['companyid'];
+        $this->load->model('usermanage/usermanagemodel');
+        $this->users = $this->usermanagemodel->getusers($this->companyid);
+        $this->load->view('pro/head');
+        $this->load->view('usermanage/distributeprojectview_sub', $this->users);
+        $this->load->view('pro/footer');
+
+
+}
+
+public function loaddistributeproject_dash(){
+		log_message('info','************ cntrl-usermanage***************');
+		$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->helper("url");
+         $this->companyid=$_POST['companyid'];
+        $this->load->model('usermanage/usermanagemodel');
+        $this->users = $this->usermanagemodel->getusers($this->companyid);
+        //$this->load->view('pro/head');
+        $this->load->view('usermanage/distributeprojectview_sub', $this->users);
+        //$this->load->view('pro/footer');
+
+
+}
+
+    public function getsenderprojects() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->senderprojects = $this->usermanagemodel->getsenderprojects();
+        $this->load->view('usermanage/getsenderprojects', $this->senderprojects);
+    }
+
+    public function getreceiverprojects() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->load->model('usermanage/usermanagemodel');
+        $this->receiverprojects = $this->usermanagemodel->getreceiverprojects();
+        $this->load->view('usermanage/getreceiverprojects', $this->receiverprojects);
+    }
+
+    public function searchdistributeproject() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->userid = $_GET['userid']; //$userid;
+        $this->load->view('usermanage/searchdistributepoject', $this->userid);
+    }
+
+    public function getsearchprojects() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+
+        $this->load->model('usermanage/usermanagemodel');
+        $this->searchproject = $this->input->post('searchproject');
+        $splitdata = explode(" ", $this->searchproject);  //split firstname and lastname
+        $firstname = $splitdata[0];
+        $lastname = "";
+        if (isset($splitdata[1])) {
+            $lastname = $splitdata[1];
+        }
+        //$this->senderprojects = $this->usermanagemodel->getsearchprojects($firstname, $lastname);
+//sorting array for searched value to be on top
+
+/*        $otherthanexactproject = array();
+        $exactproject = array();
+        for ($i = 0; $i < count($this->senderprojects); $i++) {
+            $searchedproject = $this->senderprojects[$i]['firstname'] . " " . $this->senderprojects[$i]['lastname'];
+            if ($searchedproject == $this->searchproject) {
+                $exactproject[] = $this->senderprojects[$i];
+            }
+        }
+        for ($i = 0; $i < count($this->senderprojects); $i++) {
+            $searchedproject = $this->senderprojects[$i]['firstname'] . " " . $this->senderprojects[$i]['lastname'];
+            if ($searchedproject != $this->searchproject) {
+                $otherthanexactproject[] = $this->senderprojects[$i];
+            }
+        }*/
+
+//merging array -start
+//$this->searchedprojects=array();
+//$this->searchedprojects= array_merge($exactproject,$otherthanexactproject);
+//merging array -end
+        //$this->searchedprojects = $exactproject; //displaying only single project
+        $this->searchedprojects=$this->usermanagemodel->getsearchprojects($firstname, $lastname);
+        $this->load->view('usermanage/getsearchedprojects', $this->searchedprojects);
+        //$this->load->view('usermanage/getsearchedprojects', $this->searchedprojects, $this->searchproject);
+    }
+
+//dropdown search  - start
+    function searchallprojects() {
+    	log_message('info','************ cntrl-usermanage***************');
+    	$this->setTemplate('usermanagement_sub');
+        $this->userid = $_POST['userid']; //$userid;
+        $this->load->model('usermanage/usermanagemodel');
+        $this->searchedprojects = $this->usermanagemodel->searchallprojects($this->userid);
+        $this->load->view('usermanage/searchdistributepoject', array('this->userid'=>$this->userid,'this->searchedprojects'=>$this->searchedprojects));
+    }
+
+//dropdown search - end
+
+    /*   Project Distribution  section -end */
+
+/*//@iqbal companyprofile
+function companyprofile(){
+  $this->userid = $_GET['p']; $userid;
+  $this->load->view('pro/head');
+  $this->load->view('usermanage/companyprofileview', $this->userid);
+  $this->load->view('pro/footer');
+}*/
+
+//@iqbal          staterestriction
+//start function to staterestriction
+function staterestriction(){
+	$this->setTemplate('usermanagement_sub');
+    $this->load->helper('form');
+    $this->load->helper('html');
+   // $this->rolename=$_GET['role'];
+    $this->companyname = $this->usermanagemodel->getcompanytorestrict();
+    $this->state = $this->usermanagemodel->getcompanystate();
+    $userinfo=$this->getSessionData('userinfo');
+    $companyinfo=$this->getSessionData('companyinfo');
+    
+    $this->javascripts(array('ui.multiselect.js',
+    		//'jquery-ui.min.js',
+    		'jquery.min.js',
+    		'usermanage/loadrestictedstate.js'));
+    //$this->javascripts(array('usermanage/loadrestrictedstate.js'));
+    $this->render('usermanage/loadrestrictedstate', array('this->companyname'=>$this->companyname,'this->state'=>$this->state,'userinfo'=>$userinfo));
+}
+//end function to staterestriction
+//load the states
+public function getAvailablestate() {
+		log_message('info','************ cntrl-usermanage***************');
+		$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->query = $this->usermanagemodel->getAvailablestate();
+        $this->load->view('usermanage/getAvailablestate', array('this->query'=>$this->query));
+    }
+
+public function getSelectedstate() {
+		log_message('info','************ cntrl-usermanage***************');
+		$this->setTemplate('usermanagement_sub');
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->query = $this->usermanagemodel->getSelectedstate();
+        $this->load->view('usermanage/getSelectedstate', array('this->query'=>$this->query));
+    }
+// state restrictions
+public function restrictedstates() {
+	$this->setTemplate('usermanagement_sub');
+	$usermanage_model = $this->getModel('usermanagemodel');
+	$userinfo=$this->getSessionData('userinfo');
+    $companyinfo=$this->getSessionData('companyinfo');
+	$_GET['role'] = $this->input->post('dpdrolename');
+    $this->rolename=$_GET['role'];
+    $this->load->helper('form');
+    $this->load->helper('html');
+    $this->load->library('form_validation');
+    $this->form_validation->set_rules('dpdrolename', 'Privilege', 'callback_dpdpriv');
+    $this->form_validation->set_rules('dpdresource', 'Role', 'callback_dpdroleRP');
+    $this->javascripts(array('ui.multiselect.js',
+    		//'jquery-ui.min.js',
+    		'jquery.min.js',
+    		'usermanage/loadrestictedstate.js'));
+    if ($this->form_validation->run() === FALSE) { 
+        $this->state = $usermanage_model->getAvailablestate();
+        $this->companyname = $usermanage_model->getcompanytorestrict(); //print_r( $this->companyname); exit;
+        $this->render('usermanage/loadrestrictedstate',array('this->state'=>$this->state,'this->companyname'=>$this->companyname,'this->rolename'=>$this->rolename,'userinfo'=>$userinfo) );
+    } else {
+        //form processing
+    	 
+        $selected = array();
+        if (isset($_POST['right-select'])) {
+            $selected = $_POST['right-select'];
+        } 
+        $usermanage_model->restrictedstates($selected);
+        $this->state = $usermanage_model->getAvailablestate();
+        $this->companyname = $usermanage_model->getcompanytorestrict();
+        $this->rolename=$_POST['dpdrolename'];
+        $this->load->view('usermanage/successrestrictedstates'); //print_r( $this->companyname); exit;
+       // $userinfo=$this->getSessionData('userinfo');
+       // $companyinfo=$this->getSessionData('companyinfo');
+        
+       
+        $this->render('usermanage/loadrestrictedstate',array('this->state'=>$this->state,'this->companyname'=>$this->companyname,'this->rolename'=>$this->rolename,'userinfo'=>$userinfo) );
+        
+    }
+  }
+
+
+
+}
+
+?>

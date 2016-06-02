@@ -1,0 +1,130 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+
+
+class Auth_Controller extends QS_Controller
+{
+	
+	
+	public function login(){
+			
+		if(!$this->isAuthenticated()){
+			//redirect("dashboard");
+			$this->render('account/auth/login_form');
+		}
+
+
+		if($this->isMethod('post')){
+			$session_id = $this->session->userdata('session_id');   
+			$username=$this->input->post('email');
+			$password = $this->input->post('password');
+			$user_model = $this->getModel('user_model');
+			$company_model = $this->getModel('company_model');
+
+			$result = $user_model->checkAuthentication($username,$password);
+			
+			if(!empty($result)){ 
+				$userInfo = $user_model->getUserById($result['userID']);
+				$features = $user_model->features($userInfo['roleID']);
+				$companyInfo = $company_model->getCompanyById($userInfo['companyID']);
+				
+				if (($companyInfo['status']=='Active') && ($userInfo['status']=='Active')){ 
+					/* $lastlogin = $user_model->getlastlogin($result['userID']);
+					$curTime = time();
+					$lastActivity = $curTime - $lastlogin;
+					if($lastActivity < $this->config->item('sess_expiration')){
+						redirect('account/login?duplicate=1');
+					} */
+				/*edited by sandeep*/
+					if($password==""){
+						redirect('account/logout');
+					}
+					
+					$this->setAuthenticated(true);
+					
+					//insert the sesasion id to databse
+					//$user_model->savesessionid($result['userID'],$session_id);
+					
+					// store user info to session
+					$this->setSessionData('userinfo', $userInfo);
+
+					$this->setSessionData('features',$features);
+					// store company info to session
+					//print_r($userInfo);exit;
+					$this->setSessionData('companyinfo', $companyInfo);
+					if(($userInfo['Firsttimelogin']==1)&& ($userInfo['rolename']!='superadmin') && ($userInfo['deleted']==0)){
+						redirect('account/setting_controller/firsttimelogin');
+					}
+
+					//redirecting to superadmin section
+					 if($userInfo['rolename']=='superadmin'){
+						redirect('usermanage');
+					}
+					else if($userInfo['deleted']==0){
+						redirect('dashboard');
+					}
+				
+					else{
+						redirect('account/logout');
+					}
+				}
+					
+			}
+
+			else {
+				$this->setFlash('error', true);
+				redirect('account/login');
+			}
+		}
+
+		//$this->setTitle('Login');
+		//$this->render('account/auth/login_form');
+	}
+	
+public function sendNewsLetter(){ 
+		$to=$this->input->post('hpsubmit');
+		$user_model = $this->getModel('user_model');
+		$browserAgent = $_SERVER['HTTP_USER_AGENT'];
+		
+		$ipaddr = getClientIP();
+		$random=substr(md5(rand(0, 1000000)), 0, 15);
+		$data=$user_model->insert($browserAgent,$ipaddr,$random);
+		$unsubscribe_url = $data['unsubscribe'];
+		$unsubscribe_url= '<a href="'.$unsubscribe_url.'">click here</a>';
+		$fb='<a href="http://www.facebook.com/QuickSolar">Facebook</a>';
+		$twitter='<a href="https://twitter.com/QuickSolar">Twitter</a>';
+		
+		$from='thunderpaste@gmail.com';
+		$subject='Thank you for subscribing to QuickSolar!';
+		
+		$body = $this->load->view('email/signup',array('fb' => $fb, 'twitter' => $twitter, 'unsubscribe_url' => $unsubscribe_url),true);
+		
+		$mailer=$this->getMailer();
+		$Message=$this->getMailerMessage($to, $body, $subject, $from);
+		if ($mailer->sendEmail($Message) == TRUE) {
+			$result = array('result' => 1);
+		}
+		else{
+			$result = array('result' => 0);
+		}
+		
+		$this->render('account/auth/successmail', $result);
+
+}
+
+	public function unsubscribe(){
+		$user_model = $this->getModel('user_model');
+		$random=$_GET['rand'];
+		$user_model->unsubscribe($random);
+		$this->render('account/successunsubscribe');
+	}
+	
+
+	public function logout(){
+		$session_id = $this->session->userdata('session_id');
+		$this->db->delete('qs_sessions', array('session_id'=>$session_id));
+		 
+		$this->setAuthenticated(false);
+		redirect('account/login');
+	}
+}

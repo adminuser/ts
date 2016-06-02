@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<solarglossary>
+	<data>
+		<name>Albedo</name>
+		<def>Reflected sunlight from the ground, snow, or nearby surfaces. </def>
+	</data>
+	<data>
+		<name>Alternating Current (AC)</name>
+		<def>The type of electricity that powers your home’s appliances and electronics. Solar energy produces Direct Current (DC) and is converted to AC power at the Inverter.</def>
+	</data>
+	<data>
+		<name>Altitude</name>
+		<def>Height of the sun above the horizon. The sun’s angle gets higher in the sky in the summer months and lower in winter months.</def>
+	</data>
+	<data>
+		<name>Amorphous semiconductor</name>
+		<def>Carries electrical current in a solar cell, usually found in thin-film solar modules</def>
+	</data>
+		<data>
+		<name>Array</name>
+		<def>Multiple solar panels connected together.</def>
+	</data>
+		<data>
+		<name>Azimuth</name>
+		<def>The direction that a solar panel is facing, measured in degrees away from North (North = 0°, East = 90°, South = 180°, West = 270°).</def>
+	</data>
+		<data>
+		<name>Balance of System (BOS)</name>
+		<def>The collection of the smaller parts of a complete solar system, including rail, mounts, wire clips, WEEBs, mid-clamps, end-clamps, and bolts, among others. This does not include the more expensive items, like the solar panels or inverter.</def>
+	</data>
+		<data>
+		<name>Base load</name>
+		<def>The amount of electric power a utility must supply constantly to meet the demand for energy.</def>
+	</data>
+		<data>
+		<name>Battery</name>
+		<def>The storage component for a solar system and vital to achieve an off-grid solar system. Batteries can only hold a limited amount of solar energy, and are not usually cost efficient.</def>
+	</data>
+		<data>
+		<name>Beam</name>
+		<def> Direct sunlight</def>
+	</data>
+		<data>
+		<name>BIPV</name>
+		<def>Building-Integrated Photovoltaics</def>
+	</data>
+		<data>
+		<name>BIPV panel</name>
+		<def>A type of solar panel that integrates seamlessly into the architecture of a building, most commonly in the form of solar roof shingles.</def>
+	</data>
+		<data>
+		<name>Diffuse</name>
+		<def>Sunlight scattered by clouds in the sky.</def>
+	</data>
+		<data>
+		<name>Direct Current (DC)</name>
+		<def>Low voltage electric current, produced by solar panels. Must be converted into AC current by an inverter before being used by home appliances.</def>
+	</data>	
+	<data>
+		<name>Gigawatt</name>
+		<def>One billion watts, or one thousand megawatts.</def>
+	</data>
+	<data>
+		<name>Grid</name>
+		<def>The network of power poles and cables that carry electricity from a centralized Utility power plant to a region of homes, businesses, and other buildings.</def>
+	</data>
+	<data>
+		<name>Grid tied/Grid connected</name>
+		<def>A solar system that is connected to the Utility grid and using it as an alternate source of power.</def>
+	</data>
+	<data>
+		<name>Ground mount</name>
+		<def>A type of solar installation that is built on the ground, as opposed to a “roof-mount” installation.</def>
+	</data>
+
+	<data>
+		<name>Interconnection</name>
+		<def>The process of hooking up a solar electrical system to the power grid.</def>
+	</data>
+	<data>
+		<name>Inverter</name>
+		<def>The electrical device that converts direct current (DC) electricity into alternating current (AC) electricity.</def>
+	</data>
+	<data>
+		<name>Irradiance</name>
+		<def>The rate of solar radiation falling on a point at a moment in time (units: kW/m²).</def>
+	</data>
+	<data>
+		<name>Irradiation</name>
+		<def>The amount of solar energy in an area over time (kWh/m^2/day).</def>
+	</data>
+		<data>
+		<name>Kilowatt (kW)</name>
+		<def>One thousand watts. A kW is the standard unit of solar power. 
+Ex. Eight (8) 250-Watt (W) solar panels will produce 2,000 W of nominal solar power, which will more commonly be noted as 2 kW. (8 * 250 W = 2,000 W / 1,000 = 2 kW).
+</def>
+	</data>
+		<data>
+		<name>Kilowatt-hour (kWh)</name>
+		<def>One thousand watts acting over a period of one hour. A kWh is a standard unit of solar energy.
+Ex. Eight (8) 250-Watt (W) solar panels will produce 2,000 W, or 2 kW, of nominal solar power. In six (6) hours, this will produce 12 kWh. (8 * 250 W = 2,000 W / 1,000 = 2 kW * 6 hours = 12 kWh).
+</def>
+	</data>	
+	<data>
+		<name>Megawatt</name>
+		<def>One million watts, or one thousand kilowatts.</def>
+	</data>
+	<data>
+		<name>Module</name>
+		<def>Solar panel, or a group of solar cells.</def>
+	</data>
+	<data>
+		<name>Monocrystalline panel</name>
+		<def>A solar panel that is made from a large, single silicon crystal and has a patchwork pattern. Monocrystalline panels are typically more expensive and more efficient than multi- or poly- crystalline panels.</def>
+	</data>
+	<data>
+		<name>Multicrystalline panel</name>
+		<def>A solar panel that's made from small silicon crystals oriented in lots of different directions. Multicrystalline panels are less expensive and less efficient than monocrystalline panels. (Also see “polycrystalline panel”).</def>
+	</data>
+
+	<data>
+		<name>Net meter</name>
+		<def>An electricity meter that can track both how much electricity your solar system puts into the power grid and how much electricity your home pulls out of the grid.</def>
+	</data>
+	<data>
+		<name>Panel or Solar Panel</name>
+		<def>A group of solar cells; a module.</def>
+	</data>
+	<data>
+		<name>Parallel</name>
+		<def>The current (Amp) connection of solar panels in a string. The current (Amps) of one panel is multiplied by the total number of strings, multiplied by a safety factor of 1.25, to reveal the total system current.</def>
+	</data>
+	<data>
+		<name>Photon</name>
+		<def>A "packet" of light energy.</def>
+	</data>
+		<data>
+		<name>Photovoltaic effect</name>
+		<def>The process of converting light into electricity.</def>
+	</data>
+	<data>
+		<name>Photovoltaic (PV) panel</name>
+		<def>Solar electric panel</def>
+	</data>	
+	<data>
+		<name>Polycrystalline panel </name>
+		<def>See “Multicrystalline panel”</def>
+	</data>
+	<data>
+		<name>Power purchase agreement (PPA) </name>
+		<def>A contract between a power producer and a power consumer which states that the consumer will purchase a certain amount of power from the producer.</def>
+	</data>
+	<data>
+		<name>PTC</name>
+		<def>“PVUSA Test Conditions.” Began in 1986 as an alternative to STC to reflect real outdoor field tested conditions. These are the variable conditions at which the solar modules are tested: 20 deg Cel ambient temp, wind 1 m/sec, 1000 W/m^2 irradiance</def>
+	</data>
+	<data>
+		<name>Semiconductor</name>
+		<def>A material that has a limited ability to conduct electric current. Semiconductors used in different types of solar panels include copper indium diselenide, cadmium telluride gallium arsenide, and silicon.</def>
+	</data>
+	<data>
+		<name>Series</name>
+		<def>The voltage connection of solar panels in a string. The sum of their voltages multiplied times a safety factor will determine the system's total voltage (safety factor depends on location of solar installation).</def>
+	</data>
+	
+	<data>
+		<name>Silicon</name>
+		<def>A dark gray, semi-metallic, chemical element. Silicon is the material most commonly used semiconductor used in solar cells.</def>
+	</data>
+	
+	<data>
+		<name>Solar Array</name>
+		<def>Multiple solar panels, or solar modules, are connected in series and in parallel to form a solar array.</def>
+	</data>
+	
+	<data>
+		<name>Solar constant</name>
+		<def>The average amount of solar radiation that reaches the earth's upper atmosphere, equal to 1353 watts per square meter.</def>
+	</data>
+	
+	<data>
+		<name>Solar energy</name>
+		<def>The amount of solar power produced over a unit of time, typically noted in "kilowatt-hours" (kWh).</def>
+	</data>
+	
+	<data>
+		<name>Solar power</name>
+		<def>The amount of power produced by a solar system, typically noted in "kilowatts" (kW).</def>
+	</data>
+	
+	
+	<data>
+		<name>Solar noon</name>
+		<def>The time of day when the sun reaches its highest point in the sky. This time divides the daylight hours for that day exactly in half. Solar noon may be quite a bit different from 12 o'clock noon.</def>
+	</data>
+	
+	<data>
+		<name>Solar position</name>
+		<def>Location of the sun can be described by its azimuth and altitude. Position of the sun throughout the day and throughout the year can be read off of a location-specific Sun Path Diagram.</def>
+	</data>
+	
+	<data>
+		<name>Stand alone/off grid</name>
+		<def>A solar electric system that is not connected to a power grid which is typically connected to a series of batteries.</def>
+	</data>
+	
+	<data>
+		<name>STC (Standard Test Conditions)</name>
+		<def>"Standard Test Conditions." The standard variables at which most solar modules are tested for performance: Cell temperate 25 deg. Celsius, light irradiance held to 1000 W/m^2</def>
+	</data>
+	
+	<data>
+		<name>Thin film panel</name>
+		<def>A solar panel that is thin and flexible. The term refers to both amorphous photovoltaic solar panels, which use silicon as their semiconductor, and panels that use other semiconductors like cadmium telluride and copper indium gallium diselenide.</def>
+	</data>
+	
+	<data>
+		<name>Tilt</name>
+		<def>The angle a solar panel makes with the horizon. The ideal tilt for a location will mean that the panels absorb as much sunlight as possible. The ideal fixed tilt of a solar panel, as a rule of thumb, is typically equal to its latitude.</def>
+	</data>
+	
+	<data>
+		<name>Tracking panels</name>
+		<def>Solar panels that can change the direction they face to follow the sun's movements. The tracking device can be on a single-axis, which follows the sun's movement throughout the day, or a dual-axis, which follows the sun's movement throughout the day and year.</def>
+	</data>
+	
+	<data>
+		<name>Watt</name>
+		<def>A unit of power equal to amps times volts. A solar panel's wattage is found by calculating short-circuit amps (Isc) times open-circuit voltage (Voc).</def>
+	</data>
+	
+</solarglossary>

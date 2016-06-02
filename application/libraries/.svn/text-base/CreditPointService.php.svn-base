@@ -1,0 +1,896 @@
+
+<?php
+
+/**
+ * This class use for credit point system
+ * Author Imrankhan
+ * */
+//require_once ('dbconstant.php');
+
+class CreditPointService {
+
+   // private $dbHost = server;
+   // private $dbUser = username;
+   // private $dbPass = password;
+    //private $dbName = dbname;
+
+    /**
+     * The constructor initializes the connection to database. Everytime a request is
+     * received, an instance of the service class is created and then the
+     * requested method is invoked.
+     */
+    function __construct() {
+      //  $connection = mysql_connect($this->dbHost, $this->dbUser, $this->dbPass)
+       //         or die("Could not connect to the database:<br />" . mysql_error());
+       // mysql_select_db($this->dbName, $connection)
+       //         or die("Database error:<br />" . mysql_error());
+    }
+
+    /* function to get avaible points from company table */
+
+    public function getbalance($companyID) {
+        $sql="select availablebalance from tblcompanytransaction where companyID='".$companyID."' order by companycpsID desc limit 1";
+        $balance = 0;
+        $data = mysql_query($sql) or die(mysql_error());
+        while ($row = mysql_fetch_array($data)) {
+            if (isset($row['availablebalance'])) {
+                $balance = $row['availablebalance'];
+            } else {
+                $balance = 0;
+            }
+        }
+        return $balance;
+    }
+
+    /* function to return creditpoints list */
+
+    public function getpointslist($amounts) {
+        $currentdate = date('Y-m-d');
+        $sql = "SELECT MAX(effectivedate) FROM tblcreditpaymentconfig where effectivedate<='" . $currentdate . "'";
+        $rs = mysql_query($sql) or die(mysql_error());
+        while ($row = mysql_fetch_array($rs)) {
+            $abovedate = $row['MAX(effectivedate)'];
+        }
+        $sql2 = "SELECT * FROM tblcreditpaymentconfig WHERE effectivedate<'" . $abovedate . "'";
+        $rs2 = mysql_query($sql2) or die(mysql_error());
+        if (mysql_affected_rows() > 0) {
+            while ($row = mysql_fetch_array($rs2)) {
+                $creditpoints = $row['creditpoints'];
+                $amount = $row['amount'];
+                $createdby = $row['createdby'];
+                $createddate = $row['createddate'];
+                $lastmodifiedby = $row['lastmodifiedby'];
+                $lastmodifieddate = $row['lastmodifieddate'];
+                $effectivedate = $row['effectivedate'];
+                $status = $row['status'];
+                $symbols = $row['symbols'];
+                $currency = $row['currency'];
+            }
+            $insert = "insert into tblcreditpaymentconfighistory (amount,creditpoints,createdby,createddate,lastmodifiedby,effectivedate,status,currency,symbols)
+    values ('" . $amount . "','" . $creditpoints . "','" . $createdby . "','" . $createddate . "','" . $lastmodifiedby . "','" . $effectivedate . "','" . $status . "','" . $currency . "',
+    '" . $symbols . "')";
+            $rs3 = mysql_query($insert) or die(mysql_error());
+            $delete = "delete from tblcreditpaymentconfig where effectivedate<'" . $abovedate . "'";
+            mysql_query($delete) or die(mysql_error());
+            $Sql = ("update tblcreditpaymentconfig SET status='Active' WHERE effectivedate='" . $abovedate . "'");
+            $rs = mysql_query($Sql);
+        }
+        $sql1 = "SELECT creditpoints,amount,currency FROM tblcreditpaymentconfig WHERE effectivedate='" . $abovedate . "'";
+        $rs1 = mysql_query($sql1) or die(mysql_error());
+        while ($rows = mysql_fetch_array($rs1)) {
+            $creditpoints = $rows['creditpoints'];
+            $dollar = $rows['amount'];
+            $symbols = $rows['currency'];
+        }
+        $conversionratio = $creditpoints / $dollar;
+        $points = $amounts * $conversionratio;
+        $data = array('amount' => $amounts, 'points' => $points, 'currency' => $symbols);
+        return $data;
+    }
+
+    /* function to take amount and return Amount list */
+
+    public function getamountlist($points) {
+        $currentdate = date('Y-m-d');
+        $sql = "SELECT MAX(effectivedate) FROM tblcreditpaymentconfig where effectivedate<='" . $currentdate . "'";
+        $rs = mysql_query($sql) or die(mysql_error());
+        while ($row = mysql_fetch_array($rs)) {
+            $abovedate = $row['MAX(effectivedate)'];
+        }
+        $sql2 = "SELECT * FROM tblcreditpaymentconfig WHERE effectivedate<'" . $abovedate . "'";
+        $rs2 = mysql_query($sql2) or die(mysql_error());
+        if (mysql_affected_rows() > 0) {
+            while ($row = mysql_fetch_array($rs2)) {
+                $creditpoints = $row['creditpoints'];
+                $amount = $row['amount'];
+                $createdby = $row['createdby'];
+                $createddate = $row['createddate'];
+                $lastmodifiedby = $row['lastmodifiedby'];
+                $lastmodifieddate = $row['lastmodifieddate'];
+                $effectivedate = $row['effectivedate'];
+                $status = $row['status'];
+                $symbols = $row['symbols'];
+                $currency = $row['currency'];
+            }
+            $insert = "insert into tblcreditpaymentconfighistory (amount,creditpoints,createdby,createddate,lastmodifiedby,effectivedate,status,currency,symbols)
+    values ('" . $amount . "','" . $creditpoints . "','" . $createdby . "','" . $createddate . "','" . $lastmodifiedby . "','" . $effectivedate . "','" . $status . "','" . $currency . "',
+    '" . $symbols . "')";
+            $rs3 = mysql_query($insert) or die(mysql_error());
+            $delete = "delete from tblcreditpaymentconfig where effectivedate<'" . $abovedate . "'";
+            mysql_query($delete) or die(mysql_error());
+            $Sql = ("update tblcreditpaymentconfig SET status='Active' WHERE effectivedate='" . $abovedate . "'");
+            $rs = mysql_query($Sql);
+        }
+        $sql1 = "SELECT creditpoints,amount,currency FROM tblcreditpaymentconfig WHERE effectivedate='" . $abovedate . "'";
+        $rs1 = mysql_query($sql1) or die(mysql_error());
+        while ($rows = mysql_fetch_array($rs1)) {
+            $creditpoints = $rows['creditpoints'];
+            $dollar = $rows['amount'];
+            $symbols = $rows['currency'];
+        }
+        $conversionratio = $dollar / $creditpoints;
+        $amounts = $points * $conversionratio;
+        $data = array('amount' => $amounts, 'points' => $points, 'currency' => $symbols);
+        return $data;
+    }
+
+    /* function to save credit points into company table */
+
+    public function savecreditpoints($userID, $companyid, $transactionid, $points) {
+        $userID=trim($userID);
+        $companyid=trim($companyid);
+        $balance = $this->getbalance($companyid);
+        $data = mysql_query("select companyname from tblcompany  where companyID='" . $companyid . "'");
+        while ($row = mysql_fetch_array($data)) {
+            $company = $row['companyname'];
+        }
+        $data1 = mysql_query("select firstname,lastname from tbluser where userID='" . $userID . "'");
+        while ($row1 = mysql_fetch_array($data1)) {
+            $fname = $row1['firstname'];
+            $lname = $row1['lastname'];
+        }
+        $currentdate = date('Y-m-d H:i:s');
+        $currentbalance = $balance + $points;
+        $sql2 = "SELECT transactionID FROM tblcompanytransaction";
+        $data2 = mysql_query($sql2);
+        while ($row2 = mysql_fetch_array($data2)) {
+            $dbtransactionid[] = $row2['transactionID'];
+        }
+        if (!in_array("$transactionid", $dbtransactionid)) {
+            $sql1 = "insert into tblcompanytransaction (userID,creditpoints,previousbalance,availablebalance,type,companyID,transactiondate,transactionID,companyname,username)values('" . $userID . "','" . $points . "','" . $balance . "','" . $currentbalance . "','payment','" . $companyid . "','" . $currentdate . "'
+  ,'" . $transactionid . "','" . $company . "','".$fname."' '".$lname."')";
+            mysql_query($sql1) or die(mysql_error());
+            $savecreditsid = mysql_insert_id();
+            $sql2 = "update tblcompany set creditpoints='" . $currentbalance . "' where companyID='" . $companyid . "'";
+            mysql_query($sql2) or die(mysql_error());
+
+            return $savecreditsid;
+        }
+    }
+
+    /* function to Save credit awards to company  */
+
+    public function savecreditawards($companyid, $balance, $creditpoints, $newbalance, $remark) {
+      $companyid=trim($companyid);
+        $currentdate = date('Y-m-d H:i:s');
+        $data = mysql_query("select companyname from tblcompany  where companyID='" . $companyid . "'");
+        while ($row = mysql_fetch_array($data)) {
+            $company = $row['companyname'];
+        }
+        $sql1 = "insert into tblcompanytransaction (creditpoints,previousbalance,availablebalance,type,companyID,transactiondate,companyname)values('" . $creditpoints . "','" . $balance . "','" . $newbalance . "','" . $remark . "','" . $companyid . "','" . $currentdate . "','" . $company . "')";
+        mysql_query($sql1) or die(mysql_error());
+        $sql2 = "update tblcompany set creditpoints='" . $newbalance . "' where companyID='" . $companyid . "'";
+        mysql_query($sql2) or die(mysql_error());
+    }
+
+    /* Function to SuperAdmin Deduct Points from company account */
+
+    public function savecreditdeduct($companyid, $balance, $debitpoints, $newbalance) {
+      $companyid=trim($companyid);
+        $currentdate = date('Y-m-d H:i:s');
+        $data = mysql_query("select companyname from tblcompany  where companyID='" . $companyid . "'");
+        while ($row = mysql_fetch_array($data)) {
+            $company = $row['companyname'];
+        }
+        $current = date('Y-m-d');
+        $sql1 = "insert into tblcompanytransaction (debitpoints,previousbalance,availablebalance,companyID,type,transactiondate,companyname) values
+  ('" . $debitpoints . "','" . $balance . "','" . $newbalance . "','" . $companyid . "','Deduct from Admin','" . $currentdate . "','" . $company . "')";
+        mysql_query($sql1);
+        $sql2 = "update tblcompany set creditpoints='" . $newbalance . "' where companyID='" . $companyid . "'";
+        mysql_query($sql2) or die(mysql_error());
+    }
+
+    /* function to  Activation of Services with points */
+
+    public function Activeservice($services) {
+        $currentdate = date('Y-m-d');
+        $sql = "SELECT MAX(effectivedate) FROM tblcreditserviceconfig where effectivedate<='" . $currentdate . "'";
+        $rs = mysql_query($sql) or die(mysql_error());
+        while ($row = mysql_fetch_array($rs)) {
+            $abovedate = $row['MAX(effectivedate)'];
+        }
+        $sql2 = "SELECT * FROM tblcreditserviceconfig WHERE effectivedate<'" . $abovedate . "'";
+        $rs2 = mysql_query($sql2) or die(mysql_error());
+        if (mysql_affected_rows() > 0) {
+            while ($row = mysql_fetch_array($rs2)) {
+                $service = $row['services'];
+                $creditpoints = $row['creditpoints'];
+                $createdby = $row['createdby'];
+                $createddate = $row['createddate'];
+                $lastmodifiedby = $row['lastmodifiedby'];
+                $effectivedate = $row['effectivedate'];
+                $status = $row['status'];
+            }
+            $insert = "insert into tblcreditserviceconfighistory (services,creditpoints,createdby,createddate,lastmodifiedby,effectivedate,status)
+    values ('" . $service . "','" . $creditpoints . "','" . $createdby . "','" . $createddate . "','" . $lastmodifiedby . "','" . $effectivedate . "','" . $status . "')";
+            $rs3 = mysql_query($insert) or die(mysql_error());
+            $delete = "delete from tblcreditserviceconfig where effectivedate<'" . $abovedate . "'";
+            mysql_query($delete) or die(mysql_error());
+            $Sql = ("update tblcreditserviceconfig SET status='Active' WHERE effectivedate='" . $abovedate . "'");
+            $rs = mysql_query($Sql);
+        }
+        $sql1 = "SELECT creditpoints,services,status FROM tblcreditserviceconfig WHERE effectivedate='" . $abovedate . "'";
+        $rs1 = mysql_query($sql1) or die(mysql_error());
+        while ($row = mysql_fetch_array($rs1)) {
+            $creditpoints = $row['creditpoints'];
+        }
+        return $creditpoints;
+    }
+
+    /* save debit points into company table */
+
+    public function savedebitpoints($userID, $points, $companyID, $service) {
+      $companyID=trim($companyID);
+      $userID=trim($userID);
+         $balance = $this->getbalance($companyID);
+        if($balance>=$points){
+        $newbalance = $balance - $points;
+        if($service==3){
+          $service='Mega Pro';
+        }
+         if($service==3){
+          $service='Giga Pro';
+        }
+        $sql = "select companyname from tblcompany  where companyID='".$companyID."'";
+      $data= mysql_query($sql)or die(mysql_error());
+        while ($row = mysql_fetch_array($data)) {
+           $company = $row['companyname'];
+        }
+        $data1 = mysql_query("select firstname,lastname from tbluser where userID='" . $userID . "'");
+        while ($row1 = mysql_fetch_array($data1)) {
+            $fname = $row1['firstname'];
+            $lname = $row1['lastname'];
+        }
+        $currentdate = date('Y-m-d H:i:s');
+        $current = date('Y-m-d');
+        $sql1 = "insert into tblcompanytransaction (userID,debitpoints,previousbalance,availablebalance,companyID,type,transactiondate,companyname,username) values
+  ('" . $userID . "','" . $points . "','" . $balance . "','" . $newbalance . "','" . $companyID . "','" . $service . "','" . $currentdate . "','" . $company . "','" .$fname."' '".$lname."')";
+        $rs=mysql_query($sql1);
+        $savedebitid = mysql_insert_id();
+        $sql2 = "update tblcompany set creditpoints='" . $newbalance . "' where companyID='" . $companyID . "'";
+        mysql_query($sql2) or die(mysql_error());
+
+        return $savedebitid;
+        }
+      return 0;  
+    }
+
+    /* Function to add credit points from incentivies */
+
+    public function addincentivies($userID, $incpoints) {
+       $userID=trim($userID);
+        $currentdate = date('Y-m-d H:i:s');
+        $balance = $this->getbalance($userID);
+        $newbalance = $balance + $incpoints;
+        $data = mysql_query("select companyname,companyID from tbluser join tblcompany on tbluser.company=tblcompany.companyname where tbluser.userID=$userID");
+        while ($row = mysql_fetch_array($data)) {
+            $company = $row['companyname'];
+            echo $companyid = $row['companyID'];
+        }
+        $sql1 = "insert into tblcompanytransaction (userID,creditpoints,availablebalance,type,companyID,creditpointsdate,companyname)   values('" . $userID . "','" . $incpoints . "','" . $newbalance . "','incentives','" . $companyid . "','" . $currentdate . "','" . $company . "')";
+        mysql_query($sql1) or die(mysql_error());
+        $sql2 = "update tblcompany set creditpoints='" . $newbalance . "' where companyname='" . $company . "'";
+        mysql_query($sql2) or die(mysql_error());
+        return $newbalance;
+    }
+
+//after payment for subscription company will be activates
+    public function updatesubscriptioncompany($companyid) {
+        $current = date('Y-m-d');
+        $sql = "update tblcompany set status='Active',subscribedate='" . $current . "' where companyID='" . $companyid . "' ";
+        $rs = mysql_query($sql);
+    }
+
+//add to tblsubscribedusers
+public function addsubscribedusers($companyid,$userid,$subscribedamount){
+ $current = date('Y-m-d');
+ $sql="insert into tblsubscribedusers (userID,companyID,subscribeduserdate,subscribedamount,newuser) values ('".$userid."','".$companyid."','".$current."','".$subscribedamount."','0')";
+mysql_query($sql);
+}
+
+//after payment for subscription points will be deducting in thia method
+    public function deductsubscriptionpoints($companyid, $balance, $debitpoints, $newbalance, $company, $typs) {
+        $current = date('Y-m-d H:i:s');
+        $sql1 = "insert into tblcompanytransaction (debitpoints,previousbalance,availablebalance,companyID,type,transactiondate,companyname) values
+  ('" . $debitpoints . "','" . $balance . "','" . $newbalance . "','" . $companyid . "','" . $typs . "','" . $current . "','" . $company . "')";
+        mysql_query($sql1);
+        $sql2 = "update tblcompany set creditpoints='" . $newbalance . "' where companyID='" . $companyid . "'";
+        mysql_query($sql2) or die(mysql_error());
+    }
+
+//function to list emailid's and dump into table from cronjob
+    public function subscriptionemiallist() {
+        $date = date('Y-m-d');
+        $newdate = strtotime('-30 day', strtotime($date));
+        $newdate = date('Y-m-d', $newdate);
+        $sql = "select tblcompany.companyID,tblcompany.subscriptiontype,tblcompany.creditpoints,tbluser.emailid,tbluser.firstname,tbluser.userID,tblcompany.companyname,tblcompany.autopay,tblcompany.tokenID ,tblcompany.subscribedate from tblcompany join tbluser on tblcompany.companyID=tbluser.companyID  where tbluser.roleID=3 and subscribedate<'" . $newdate . "' and (subscriptiontype=3 or subscriptiontype=4)  ";
+        $data = mysql_query($sql);
+        $companiesdata=array();
+        while ($row = mysql_fetch_array($data)) {
+            $companiesdata[] = $row;
+        }
+     foreach ($companiesdata as $key => $value) {
+           $sql1 = ("insert into tblsubscriptionemaillists (emailid,type,companyID,userID,firstname,companyname,creditpoints,autopay,tokenID,substartdate)
+         values('" . $value['emailid'] . "','" . $value['subscriptiontype'] . "','" . $value['companyID'] . "','" . $value['userID'] . "',
+         '" . $value['firstname'] . "','" . $value['companyname'] . "','" . $value['creditpoints'] . "','" . $value['autopay'] . "','".$value['tokenID'] . "'
+         ,'".$newdate . "')");
+           mysql_query($sql1);
+        }
+    }
+
+//function to get tier subscription amount from table and return in term of points
+    public function getsubscriptionamount() {
+        $sql1 = "select distinctrow creditpoints from tblsubscriptionfeatures where subscriptionID=3 ";
+        $data1 = mysql_query($sql1);
+        while ($row1 = mysql_fetch_array($data1)) {
+            $subamount3 = $row1['creditpoints'];
+        }
+        $subpoints3 = $this->getpointslist($subamount3);
+        $subpoints3 = $subpoints3['points'];
+        $sql2 = "select distinctrow creditpoints from tblsubscriptionfeatures where subscriptionID=4 ";
+        $data2 = mysql_query($sql2);
+        while ($row1 = mysql_fetch_array($data2)) {
+            $subamount4 = $row1['creditpoints'];
+        }
+        $subpoints4 = $this->getpointslist($subamount4);
+        $subpoints4 = $subpoints4['points'];
+        $subamount = array('subpoint3' => $subpoints3, 'subpoint4' => $subpoints4, 'subamount3' => $subamount3, 'subamount4' => $subamount4);
+        return $subamount;
+    }
+
+//function to get tier subscription amount from table and return in term of points
+    public function getsubamount($subscriptiontid) {
+       $sql = "select distinctrow creditpoints from tblsubscriptionfeatures where subscriptionID='".$subscriptiontid."' ";
+        $data = mysql_query($sql);
+        while ($row1 = mysql_fetch_array($data)) {
+            $subamount = $row1['creditpoints'];
+        }
+        $subpoints = $this->getpointslist($subamount);
+     return $subpoints;
+    }
+
+//function toget grace period
+    public function getgraceperiod($subscriptiontid) {
+        $sql = "select distinctrow subscriptiongraceperiod from tblsubscriptionfeatures where subscriptionID='".$subscriptiontid."' ";
+        $data = mysql_query($sql);
+        while ($row1 = mysql_fetch_array($data)) {
+            $graceperiod = $row1['subscriptiongraceperiod'];
+        }
+         return $graceperiod;
+        }
+//function to mail user after success deduct subscription
+function sendsuccessmail($companyemailid,$firstname,$subscriptionpoints,$typs,$creditpoints,$deductpoints,$subscriptiontid,$companyid,$comments,$userid){
+  $date = date('Y-m-d');
+   require_once ('ses.php');
+      $too=$companyemailid;
+      $ses = new SimpleEmailService('AKIAIW7YQTRZBE4ISGGQ', 'm1Sl80yV4WMLxC2C1ysVos4+L9vvZcCtAlSGMQPh');
+      $ses->enableVerifyPeer(false);
+      $m = new SimpleEmailServiceMessage();
+      $m->addTo($too);
+      $m->setFrom('thunderpaste@gmail.com');
+      $m->setSubject('Welcome to Solarchitect');
+      $m->setMessageFromString('Dear  ' . $firstname . ',
+      '.$subscriptionpoints.' has been deducted for '.$typs.' subscription.
+      Previous balance was ' . $creditpoints . ' points.
+      Available balance is  ' . $deductpoints . ' points.
+
+      QuickSolar Support Team');
+      $ses->enableVerifyPeer(false);
+      if ($ses->sendEmail($m) == TRUE) {
+        echo "<h1><p align='center'> successfull.Check Your Email ";
+        $sql1 = ("insert into tblhistorysubscriptionemaillists (emailid,type,companyID,comments,userID) values('" . $companyemailid . "',
+        '" . $subscriptiontid . "','" . $companyid . "','" . $comments . "','" . $userid . "') ");
+        mysql_query($sql1);
+        mysql_query("update tblhistorysubscriptionemaillists set comments='Email Sent Successfully' where companyID='" . $companyid . "' ");
+        mysql_query("update tblcompany set subscribedate='" . $date . "' where companyID='" . $companyid . "' ");
+        $sql1 = ("delete from tblsubscriptionemaillists  where type='".$subscriptiontid."' limit  100");
+        mysql_query($sql1);
+           }
+       else {
+        echo "Your Emailid is Invalid, request could not be processed.....";
+        mysql_query("update tblsubscriptionemaillists set comments='Points Deducted But Email has not send due to server down' ");
+         }
+}
+
+
+public function sendReminder(){
+
+$sql = "select * from tblsubscriptionemaillists limit 100";
+$rs=mysql_query($sql);
+$companydata = array();
+while($row=mysql_fetch_array($rs)){
+  if(!empty($row)){
+  $companydata[]=$row;
+  } else{
+    echo "no data";
+  }
+  }
+  $count=count($companydata);// exit;
+    for($i=0;$i<$count;$i++){
+    $subscriptiontid=$companydata[$i]['type'];
+    $companyid=($companydata[$i]['companyID']);
+    $creditpoints=$this->getbalance($companyid);
+    $companyemailid=($companydata[$i]['emailid']);
+    $firstname=($companydata[$i]['firstname']);
+    $companyname=($companydata[$i]['companyname']);
+    $userid=($companydata[$i]['userID']);
+    $comments=($companydata[$i]['comments']);
+    $autopay=($companydata[$i]['autopay']);
+    $Tokenid=($companydata[$i]['tokenID']);
+    $date=($companydata[$i]['substartdate']);
+    $subscriptionpoints=$this->getsubamount($subscriptiontid);
+    $subscriptionpoints=$subscriptionpoints['points'];
+    /*i have write here some bussiness logic*/
+      $subscribeadmin=$this->getsubscribeduseramount($companyid,$date,$subscriptionpoints,$userid);
+      $newusersamount=$this->getnewusersamount($companyid,$date,$subscriptionpoints,$userid);
+      $olduseramount=$this->getoldusersamount($companyid,$date,$subscriptionpoints,$userid);
+      $subscriptionpoints=$subscribeadmin+$newusersamount['Total']+$olduseramount['Total'];
+      $graceperiod=$this->getgraceperiod($subscriptiontid);
+      $newdate = strtotime('+30 day', strtotime($date));
+      $newdate1 = date('Y-m-d', $newdate);
+      $gracedate=strtotime('+'.$graceperiod.' day', strtotime($newdate1));
+      $newdate = date('Y-m-d', $gracedate);
+       $currentdate=date('Y-m-d');
+      if($newdate>=$currentdate) {
+      if($creditpoints<$subscriptionpoints){
+      if($autopay==0){
+      if($subscriptiontid==3){
+        $typs='MegaPro';
+        }
+      if($subscriptiontid==4){
+        $typs='GigaPro';
+        }
+      require_once ('ses.php');
+      $too=$companyemailid;
+      $ses = new SimpleEmailService('AKIAIW7YQTRZBE4ISGGQ', 'm1Sl80yV4WMLxC2C1ysVos4+L9vvZcCtAlSGMQPh');
+      $ses->enableVerifyPeer(false);
+      $m = new SimpleEmailServiceMessage();
+      $m->addTo($too);
+      $m->setFrom('thunderpaste@gmail.com');
+      $m->setSubject('Welcome to Solarchitect');
+      $m->setMessageFromString('Dear  ' . $firstname . ',
+      you required  '.$subscriptionpoints.' points for '.$typs.' subscription.
+    and your Available balance is  ' . $creditpoints . ' points.
+
+      QuickSolar Support Team');
+      $ses->enableVerifyPeer(false);
+      if ($ses->sendEmail($m) == TRUE) {
+        echo "<h1><p align='center'> successfull.Check Your Email ";
+         }
+         else {
+        echo "Your Emailid is Invalid, request could not be processed.....";
+        }
+     }
+   }
+   }
+   if($newdate==$currentdate) {
+     $sql1="update tblcompany set status='Suspended' where companyID='".$companyid."'";
+     mysql_query($sql1);
+     $sql2="delete from tblsubscriptionemaillists where companyID='".$companyid."'";
+     mysql_query($sql2);
+   }
+ }
+}
+//function to deduct points for expired subscription through cronjob
+public function subscription() {
+require_once(dirname(dirname(__FILE__)).'/solar/AWS/src/Amazon/FPS/Samples/autopayment.php');
+$payment=new autopayment();
+//$date = date('Y-m-d');
+$autopaylist=array();
+$sql = "select * from tblsubscriptionemaillists limit 100";
+$rs=mysql_query($sql);
+//$companydata = array();
+while($row=mysql_fetch_array($rs)){
+  $companydata[]=$row;
+  }
+if(empty($companydata)) {
+   echo "job has over";
+  }
+else{
+   $count=count($companydata);// exit;
+    for($i=0;$i<$count;$i++){
+    $subscriptiontid=$companydata[$i]['type'];
+    $companyid=($companydata[$i]['companyID']);
+    $creditpoints=$this->getbalance($companyid);
+    $companyemailid=($companydata[$i]['emailid']);
+    $firstname=($companydata[$i]['firstname']);
+    $companyname=($companydata[$i]['companyname']);
+    $userid=($companydata[$i]['userID']);
+    $comments=($companydata[$i]['comments']);
+    $autopay=($companydata[$i]['autopay']);
+    $Tokenid=($companydata[$i]['tokenID']);
+    $date=($companydata[$i]['substartdate']);
+    $subscriptionpoints=$this->getsubamount($subscriptiontid);
+    $subscriptionpoints=$subscriptionpoints['points'];
+    /*i have write here some bussiness logic*/
+      $subscribeadmin=$this->getsubscribeduseramount($companyid,$date,$subscriptionpoints,$userid);
+      $newusersamount=$this->getnewusersamount($companyid,$date,$subscriptionpoints,$userid);
+      $olduseramount=$this->getoldusersamount($companyid,$date,$subscriptionpoints,$userid);
+      $subscriptionpoints=$subscribeadmin+$newusersamount['Total']+$olduseramount['Total'];
+    if($creditpoints>=$subscriptionpoints){
+      $deductpoints=$creditpoints-$subscriptionpoints;
+      if($subscriptiontid==3){
+        $typs='MegaPro';
+        }
+      if($subscriptiontid==4){
+        $typs='GigaPro';
+        }
+      $this->deductsubscriptionpoints($companyid, $creditpoints, $subscriptionpoints, $deductpoints, $companyname, $typs);
+      $this->sendsuccessmail($companyemailid,$firstname,$subscriptionpoints,$typs,$creditpoints,$deductpoints,$subscriptiontid,$companyid,$comments,$userid);
+      }
+     if($creditpoints<$subscriptionpoints){
+     if($autopay==0){
+        //echo "Hi";
+         }
+      //write some logi for deducting
+             if($autopay==1){
+          $points=$subscriptionpoints-$creditpoints;
+          $amounts=$this->getamountlist($points);
+          $amount=$amounts['amount'];
+           $autopaylist[]=array('amount'=>$amount,'companyid'=>$companyid,'tokenID'=>$Tokenid,'userid'=>$userid);
+
+         }
+       }
+    }
+  }
+
+//$payment->autopay($autopaylist);
+}
+//function list emails for before two day's expire and dump into table daylly
+    public function beforeexpiresubemaillist() {
+        $date = date('Y-m-d');
+        $newdate = strtotime('-28 day', strtotime($date));
+        $beforesubdate = date('Y-m-d', $newdate);
+        $companiesdata = array();
+        $sql = "select tblcompany.companyID,tblcompany.subscriptiontype,tblcompany.creditpoints,tbluser.emailid from tblcompany join tbluser on
+  tblcompany.companyID=tbluser.companyID where subscribedate ='" . $beforesubdate . "' and (subscriptiontype=3 or subscriptiontype=4) ";
+        $data = mysql_query($sql);
+        while ($row = mysql_fetch_array($data)) {
+            $companiesdata[] = $row;
+        }
+        foreach ($companiesdata as $key => $value) {
+            $sql1 = ("insert into tblsubscriptionemaillists (emailid,type,companyID) values('" . $value['emailid'] . "','beforeemail','" . $value['companyID'] . "')");
+            mysql_query($sql1);
+        }
+    }
+
+    public function beforeexpiresub() {
+        $emailarray = array();
+        $sql = "select * from tblsubscriptionemaillists where type='beforeemail' limit  100";
+        $data = mysql_query($sql);
+        while ($row = mysql_fetch_array($data)) {
+            $emailarray['emailid'][] = $row['emailid'];
+            $emailarray['type'][] = $row['type'];
+            $emailarray['companyID'][] = $row['companyID'];
+            $emailarray['comments'][] = $row['comments'];
+        }
+        if (empty($emailarray)) {
+            echo "job has over";
+        } else {
+            for ($i = 0; $i < count($emailarray['emailid']); $i++) {
+                require_once ('ses.php');
+                $too = $emailarray['emailid'][$i];
+                $ses = new SimpleEmailService('AKIAIW7YQTRZBE4ISGGQ', 'm1Sl80yV4WMLxC2C1ysVos4+L9vvZcCtAlSGMQPh');
+                $ses->enableVerifyPeer(false);
+                $m = new SimpleEmailServiceMessage();
+                $m->addTo($too);
+                $m->setFrom('thunderpaste@gmail.com');
+                $m->setSubject('Welcome to Solarchitect');
+                $m->setMessageFromString('Dear Customer,
+      Your Subscription will be expired soon.
+      Please Recharge your account to continue the subscription.
+
+      If you have sufficient balance please ignore this mail
+
+      QuickSolar Support Team');
+                $ses->enableVerifyPeer(false);
+                if ($ses->sendEmail($m) == TRUE) {
+                    echo "<h1><p align='center'> successfull.Check Your Email ";
+                    mysql_query("update tblsubscriptionemaillists set comments='Email Sent Successfully' ");
+                    $sql1 = ("insert into tblhistorysubscriptionemaillists (emailid,type,companyID,comments) values('" . $emailarray['emailid'][$i] . "',
+        '" . $emailarray['type'][$i] . "','" . $emailarray['companyID'][$i] . "','" . $emailarray['comments'][$i] . "') ");
+                    mysql_query($sql1);
+                    $sql2 = ("delete from tblsubscriptionemaillists  where type='beforeemail' limit  100");
+                    mysql_query($sql2);
+                } else {
+                    echo "Your Emailid is Invalid, request could not be processed.....";
+                    mysql_query("update tblsubscriptionemaillists set comments='Email has not send due to server down' ");
+                }
+            }
+        }
+    }
+
+//function to tier upgrade the company account while balance is low
+public function upgrade($companyid,$upgradetier,$userID,$points){
+$date = date('Y-m-d');
+$currentdate = date('Y-m-d H:i:s');
+//$this->savecreditpoints($userID, $companyid, $transactionid, $points);
+$balance = $this->getbalance($companyid);
+if($balance>=$points){
+ if($upgradetier==3){
+   $upgrade='Mega Pro';
+ }
+ if($upgradetier==4){
+   $upgrade='Giga Pro';
+ }
+$newbalance=$balance-$points;
+$data = mysql_query("select companyname from tblcompany  where companyID='" . $companyid . "'");
+        while ($row = mysql_fetch_array($data)) {
+            $company = $row['companyname'];
+        }
+
+        $sql1 = "insert into tblcompanytransaction (debitpoints,previousbalance,availablebalance,companyID,type,transactiondate,companyname,userID) values
+  ('" . $points . "','" . $balance . "','" . $newbalance . "','" . $companyid . "','".$upgrade."','" . $currentdate . "','" . $company . "','" . $userID . "')";
+        mysql_query($sql1);
+
+$sql="update tblcompany set subscriptiontype='".$upgradetier."',subscribedate='".$date."',creditpoints='" . $newbalance . "' where companyID='".$companyid."'";
+mysql_query($sql);
+}
+}
+//function to tier downgrade the company account
+public function downgrade($companyid,$downgradetier){
+$date = date('Y-m-d');
+$sql="update tblcompany set nextmonthplan='".$downgradetier."',previnactivedate='".$date."' where companyID='".$companyid."'" ;
+mysql_query($sql);
+}
+
+
+//function to tier upgrade the company account
+public function suffupgrade($companyid,$subscriptiontype,$userID,$points,$balance){
+  if($balance>=$points){
+$newbalance=$balance-$points;
+if($subscriptiontype==3){
+  $subscription='Mega Pro';
+}
+if($subscriptiontype==4){
+  $subscription='Giga Pro';
+}
+$currentdate = date('Y-m-d H:i:s');
+$date = date('Y-m-d');
+$data = mysql_query("select companyname from tblcompany  where companyID='" . $companyid . "'");
+        while ($row = mysql_fetch_array($data)) {
+            $company = $row['companyname'];
+        }
+
+        $sql1 = "insert into tblcompanytransaction (debitpoints,previousbalance,availablebalance,companyID,type,transactiondate,companyname,userID) values
+  ('" . $points . "','" . $balance . "','" . $newbalance . "','" . $companyid . "','".$subscription."','" . $currentdate . "','" . $company . "','" . $userID . "')";
+        mysql_query($sql1);
+       $id=mysql_insert_id();
+$sql="update tblcompany set subscriptiontype='".$subscriptiontype."',subscribedate='".$date."',creditpoints='" . $newbalance . "' where companyID='".$companyid."'";
+mysql_query($sql);
+return $id;
+}
+else{
+  return 0;
+}
+}
+//function to get the downgrading list
+function getdowngradelists(){
+     $date = date('Y-m-d');
+     $newdate = strtotime('-30 day', strtotime($date));
+     $newdate = date('Y-m-d', $newdate);
+   $sql="select nextmonthplan, companyID from tblcompany where subscribedate='" . $newdate . "' and nextmonthplan != 0 ";
+     $rs=mysql_query($sql);
+     while($row = mysql_fetch_array($rs)){
+       $companiesdata[]=$row;
+     }
+
+      if(isset($companiesdata)){
+       foreach ($companiesdata as $key => $value) {
+      $sql1="update tblcompany set subscribedate='" . $date . "', subscriptiontype='" .$value['nextmonthplan']. "', nextmonthplan=0 where companyID='".$value['companyID']."' ";
+     $rs=mysql_query($sql1)or die(mysql_error());
+
+     $sql1="select emailid  from tbluser where  roleID=3 and companyID= '" . $value['companyID'] . "' ";
+     $rs1=mysql_query($sql1);
+     while($row1=mysql_fetch_array($rs1)){
+       $emailid=$row1['emailid'] ;
+     }
+
+                require_once ('ses.php');
+                $too = $emailid;
+                $ses = new SimpleEmailService('AKIAIW7YQTRZBE4ISGGQ', 'm1Sl80yV4WMLxC2C1ysVos4+L9vvZcCtAlSGMQPh');
+                $ses->enableVerifyPeer(false);
+                $m = new SimpleEmailServiceMessage();
+                $m->addTo($too);
+                $m->setFrom('thunderpaste@gmail.com');
+                $m->setSubject('Welcome to Solarchitect');
+                $m->setMessageFromString('Dear Customer,
+      Your Subscription  will be moved to MegaPro.
+
+      Regards,
+      QuickSolar Support Team');
+                $ses->enableVerifyPeer(false);
+                if ($ses->sendEmail($m) == TRUE) {
+                    echo "<h1><p align='center'> successfull.Check Your Email ";
+                   } else {
+                    echo "Your Emailid is Invalid, request could not be processed.....";
+                }
+            }
+        }
+}
+//function to get subscribed account
+function getsubscribeduser($companyid,$date,$userid){
+$sql1="select subscribedamount,userID from tblsubscribedusers where userID='".$userid."' and subscribeduserdate>='".$date."'";
+$rs=mysql_query($sql1);
+$Row=array();
+while($rows=mysql_fetch_array($rs)){
+if(isset($rows)){
+$Row=$rows;
+}
+else{
+ $Row='No';
+}
+}
+return $Row;
+}
+//function to get new users
+function getnewusers($companyid,$date,$userid){
+$data=$this->getsubscribeduser($companyid,$date,$userid);
+if($data!='No'){
+ $sql1="select subscribeduserdate,userID from tblsubscribedusers where userID!='".$userid."' and subscribeduserdate>='".$date."' and companyID='".$companyid."'";
+}
+else{
+ $sql1="select subscribeduserdate,userID from tblsubscribedusers where  subscribeduserdate>='".$date."'  and companyID='".$companyid."'";
+}
+$rs=mysql_query($sql1);
+$Row=array();
+while($rows=mysql_fetch_array($rs)){
+if(isset($rows)) {
+$Row[]=$rows;
+}
+else{
+ $Row='No';
+}
+}
+return $Row;
+}
+
+//function to get inctive users to deduct amount
+public function getinactiveusers($companyid,$date){
+$sql="select userID,inactivedate from tbluser where companyID='".$companyid."' and inactivedate='".$date."'";
+$rs=mysql_query($sql);
+$Row=array();
+while($rows=mysql_fetch_array($rs)){
+if(isset($rows)) {
+$Row[]=$rows;
+}
+else{
+ $Row='No';
+}
+}
+return $Row;
+}
+//function to get last month users
+function getoldusers($companyid,$date,$userid){
+$sql="select userID from tbluser where companyID='".$companyid."' and userID!='".$userid."' and status='Active'";
+$rs=mysql_query($sql) or die ('Unable to run query:'.mysql_error());
+$userids=array();
+while($row=mysql_fetch_array($rs)){
+$userids[]=$row['userID'];
+}
+$newuser=$this->getnewusers($companyid,$date,$userid);
+if($newuser!='No'){
+$getnewusers=array();
+foreach($newuser as $key=>$value){
+ $getnewusers[]=$value['userID'];
+}
+$Newarray=array_diff($userids,$getnewusers);
+ }
+ else{
+$Newarray=$userids;
+ }
+
+return $Newarray;
+}
+
+function getsubscribeduseramount($companyid,$date,$subscriptionpoints,$userid){
+ $getamount=$this->getsubscribeduser($companyid,$date,$userid);
+ if(!isset($getamount['subscribedamount'])){
+    return $getamount['total']=$subscriptionpoints;
+ }
+ else{
+   return $getamount['total']=0;
+ }
+}
+//function to get newusers points returning alldata for user
+function getnewusersamount($companyid,$date,$subscriptionpoints,$userid){
+$newusers=$this->getnewusers($companyid,$date,$userid);
+ if($newusers!='No'){
+$total='';
+for($i=0;$i<count($newusers);$i++){
+  $currentdate=date('Y-m-d');
+  $subscribeddate= $newusers[$i]['subscribeduserdate'];
+  $subscribeddate=date_create((string)$subscribeddate);
+  $currentdate=date_create((string)$currentdate);
+  $diffdays=date_diff($currentdate,$subscribeddate);
+  $days = $diffdays->format('%d');
+  $perday=$subscriptionpoints/30;
+  $deductpoints=$days*$perday;
+  $newusers[$i]['deductpoints']=$deductpoints;
+  $total+=$newusers[$i]['deductpoints'];
+}
+$newusers['Total']=$total;
+}
+else{
+$newusers=0;
+}
+return $newusers;
+}
+
+//function to get oldusers points returning userdata
+function getoldusersamount($companyid,$date,$subscriptionpoints,$userid){
+$olduser=$this->getoldusers($companyid,$date,$userid);
+ if(!empty($olduser)){
+ $countuserid=count($olduser);
+ $oldusersamount=$countuserid*$subscriptionpoints;
+ $olduser['Total']=$oldusersamount;
+ }
+ else{
+  $oldusersamount=0;
+  $olduser['Total']=$oldusersamount;
+ }
+ return $olduser;
+}
+//function toget inactiveamount
+public function getinactiveamounts($companyid,$date,$subscriptionpoints){
+ $inactiveusers=$this->getinactiveusers($companyid,$date);
+  if($inactiveusers!='No'){
+$total='';
+for($i=0;$i<count($inactiveusers);$i++){
+  $subscribeddate=$date;
+  $inactivedate= $inactiveusers[$i]['subscribeduserdate'];
+  $subscribeddate=date_create((string)$subscribeddate);
+  $inactivedate=date_create((string)$inactivedate);
+  $diffdays=date_diff($subscribeddate,$inactivedate);
+  $days = $diffdays->format('%d');
+  $perday=$subscriptionpoints/30;
+  $deductpoints=$days*$perday;
+  $inactiveusers[$i]['deductpoints']=$deductpoints;
+  $total+=$inactiveusers[$i]['deductpoints'];
+}
+$inactiveusers['Total']=$total;
+}
+else{
+$inactiveusers=0;
+}
+return $inactiveusers;
+}
+
+//End of the class
+}
+//$obj=new CreditPointService;
+//$balance=$obj->getbalance($companyID='29');
+//$obj->getpointslist($amounts=30);
+//$obj->getamountlist($points=25);
+//$obj->Activeservice($services='Report');
+//$obj->creditpoints($userID=88,$points=30);
+//$obj->debitpoints($report='20',$userID);
+//$obj->savecreditpoints($userID=191,$companyid=57,$transactionid='ZTWRzX6dCp7JmbvnKDhP4tYrMxVkL9BcqAH',$points=50);
+//$obj->savedebitpoints($userID,$points=20,$companyID=29,$service='Report');
+//$obj->subscription();
+//$obj->subscriptionemiallist();
+//$obj->beforeexpiresubemaillist();
+//$obj->beforeexpiresub();
+//$obj->sendReminder();
+//$obj->getnewusersamount($companyid=56,$date='2013-01-28',$subscriptionpoints=150,$userid=190);
+?>

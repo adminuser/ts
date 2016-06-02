@@ -1,0 +1,145 @@
+<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
+require_once('dbconstant.php');
+/**
+ * This class extends Code Igniter Controller
+ * works as controller in MVC model
+ * Author Imrankhan
+ * */
+class subscription extends QS_Controller {
+
+ //function load helper class in conctructor
+    public function __construct() {
+        parent::__construct();
+  
+    }
+   //function to get types of subscriptions from table and it return to subscriptionview
+    public function create() {
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+         $subModel_model=$this->getModel('subscription_model');
+         $basepath=basepath;
+        $this->form_validation->set_rules('txtsubscription', 'Subscription', 'is_unique[tblsetsubscription.subscription]');
+        if ($this->form_validation->run() === FALSE) {
+            $this->query = $subModel_model->get_subscription();
+            $this->load->view('subscription/subscriptionview', array('this->query'=>$this->query,'basepath'=>$basepath));
+        } else {
+            $subModel_model->set_subscription();
+            $this->query = $subModel_model->get_subscription();
+            $this->load->view('subscription/subscriptionview', array('this->query'=>$this->query,'basepath'=>$basepath));
+        }
+
+    }
+
+//function to configuration of subscription
+    public function configsubscription() {
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $this->load->library('form_validation');
+        $subModel_model=$this->getModel('subscription_model');
+        $basepath=basepath;
+        $this->form_validation->set_rules('dpdsub', 'Subscription', 'callback_dpdcredits');
+        $this->form_validation->set_rules('dpdsub', 'Subscription Name', 'required');
+        if ($this->form_validation->run() === FALSE) {
+            $this->query = $subModel_model->get_subscription();
+            $this->feature = $subModel_model->getfeatureforpf();
+            $this->load->view('subscription/subscriptionview', array('this->query'=>$this->query,'basepath'=>$basepath,'this->feature'=>$this->feature));
+        } else {
+            //$grceprd = array();
+            $selected = array();
+            if (isset($_POST['right-select'])) {
+                $selected = $_POST['right-select'];
+                //$grceprd=  $_POST['right-select'];
+              }
+
+            $subModel_model->configsubscription($selected);
+            $this->query = $subModel_model->get_subscription();
+            $this->feature = $subModel_model->getfeatureforpf();
+            redirect($this->uri->uri_string());
+            $this->load->view('subscription/subscriptionview', array('this->query'=>$this->query,'basepath'=>$basepath,'this->feature'=>$this->feature));
+        }
+    }
+
+//function to get Available feature from table
+  public function getAvailablefeature() {
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $subModel_model=$this->getModel('subscription_model');
+        $this->query = $subModel_model->getAvailablefeature();
+        $this->load->view('subscription/getAvailablefeature', $this->query);
+    }
+
+//function to get selected feature to particular subscription
+  public function getSelectedfeature() {
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $subscriptionID = $_POST['subscription'];
+        $this->subscriptionID = $subscriptionID;
+        $subModel_model=$this->getModel('subscription_model');
+        $this->query = $subModel_model->getSelectedfeature();
+        $this->load->view('subscription/getSelectedfeature', $this->query);
+    }
+
+//function to get amount to particular subscription from table
+  public function getcredits() {
+        $this->load->helper('form');
+        $this->load->helper('html');
+        $subscriptionID = $_POST['subscription'];
+        //print_r($subscriptionID);
+        $this->subscriptionID = $subscriptionID;
+        $subModel_model=$this->getModel('subscription_model');
+        $this->query = $subModel_model->getcredits($this->subscriptionID);
+        $this->load->view('subscription/getcredits', $this->query);
+    }
+
+//function to get project to particular subscription from table
+    public function getprojects() {
+        $subscriptionID = $_POST['subscription'];
+        $this->subscriptionID = $subscriptionID;
+        $subModel_model=$this->getModel('subscription_model');
+        $this->query = $subModel_model->getcredits($this->subscriptionID);
+        $this->load->view('subscription/getprojects', $this->query);
+    }
+
+//function to get designs to particular subscription from table
+    public function getdesigns() {
+        $subscriptionID = $_POST['subscription'];
+        $this->subscriptionID = $subscriptionID;
+        $subModel_model=$this->getModel('subscription_model');
+        $this->query = $subModel_model->getcredits($this->subscriptionID);
+        $this->load->view('subscription/getdesigns', $this->query);
+    }
+
+//function to get getcostreport to particular subscription from table
+    public function getcostreport() {
+        $subscriptionID = $_POST['subscription'];
+        $this->subscriptionID = $subscriptionID;
+        $subModel_model=$this->getModel('subscription_model');
+        $this->query = $subModel_model->getcredits($this->subscriptionID);
+        $this->load->view('subscription/getcostreport', $this->query);
+    }
+
+    public function getgraceperiod(){
+        $subscriptionID = $_POST['subscription'];
+        $this->subscriptionID = $subscriptionID;
+        $subModel_model=$this->getModel('subscription_model');
+        $this->query = $subModel_model->getcredits($this->subscriptionID);
+        $this->load->view('subscription/getgraceperiod', $this->query);
+
+
+}
+
+
+
+  //function to get all emailid's for subscribed and unsubscribed from table
+  public function viewallsubscribe(){
+   $subModel_model=$this->getModel('subscription_model');
+   $this->query=$subModel_model->subscribedemails();
+   $this->load->view('subscription/subscribedemails',$this->query);
+}
+
+
+//End of the class
+}
+
+?>

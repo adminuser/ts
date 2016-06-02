@@ -1,0 +1,292 @@
+<?php
+require_once 'dbconstant.php';
+class CalculationIncentiveService {
+  var $username = username;
+  var $password = password;
+  var $server = server;
+  var $port = port;
+  var $databasename = dbname;
+  var $connection;
+/**
+* The constructor initializes the connection to database. Everytime a request is
+* received, an instance of the service class is created and then the
+* requested method is invoked.
+*/
+  public function __construct() {
+   $this->connection = mysqli_connect($this->server, $this->username, $this->password, $this->databasename, $this->port);
+$this->throwExceptionOnError($this->connection);
+  }
+ //Calculate Incentive based on rule set in respective incentive type viz.Federal, State, City, Utility
+private function calculateIncentivevalue($row,$installedcost, $totalwatt,$incentiveTypeID) {
+//check whether percentage or amount
+      //print_r($row) ;exit;
+    $percentage = $row->PercentageOfTotal;
+    if ($percentage > 0) {
+//check whether STC or PTC
+      $stcorptc = $row->PTCORSTC;
+      if ($stcorptc == 'P') {
+        $incentivevalue = $installedcost  * $percentage / 100;
+      }
+      else {
+
+        $incentivevalue = $installedcost  * $percentage / 100;
+      }
+    }
+    else {
+//check whether STC or PTC
+      $stcorptc = $row->PTCORSTC;
+      if ($stcorptc == 'P') {
+        $PerkWh = $row->PerkWh;
+        $PerWPTC = $row->PerWPTC;
+        $kwpwr= $totalwatt/1000;
+        if($kwpwr>$row->PTCKWMAX && $row->PTCKWMAX>0 )
+            $kwpwr= $row->PTCKWMAX;
+        $incentivevalue =  $kwpwr * $PerWPTC;
+      }
+      else {
+        $PerkWh = $row->PerkWh;
+        $PerWSTC = $row->PerWSTC;
+        $kwpwr= $totalwatt/1000;
+        if($kwpwr>$row->STCKWMAX && $row->STCKWMAX>0 )
+            $kwpwr= $row->STCKWMAX;
+        $incentivevalue =  $kwpwr * $PerWSTC;
+      }
+     if($incentiveTypeID==3) {
+         $kwpwr= $totalwatt/1000;
+          if($kwpwr>$row->FITKWMAX){
+            $kwpwr=$row->FITKWMAX;
+          }
+            if($stcorptc == 'P'){
+                   $incentivevalue =  $kwpwr * $PerWPTC;
+            } else{
+                  $incentivevalue =  $kwpwr * $PerWSTC;
+            }
+           $MAX = $row->FITMAX;
+          if ($incentivevalue > $MAX && $MAX>0){
+            $incentivevalue = $MAX;
+          }
+          return $incentivevalue;
+     }
+    }
+//check for Max Limit
+    if ($row->MAX == 'Y') {
+      $MAX = $stcorptc == 'P' ? $row->PTCMAX : $row->STCMAX;
+      if ($incentivevalue > $MAX) {
+        $incentivevalue = $MAX;
+      }
+
+    }
+
+    return $incentivevalue;
+  }
+  //Calculates Federal Incentive
+  public function getFederalincentives($incentivebankid, $userid, $installedcost, $totalwatt){
+    if($incentivebankid==0 || $incentivebankid=='' || $incentivebankid==NULL || $userid==0 || $userid=='' || $userid==NULL){return 0;}
+      $stmt = mysqli_prepare($this->connection, "SELECT transactionincentiveID,incentivetype  FROM tbltransactionincentives where incentiveBankID=? and userID=?"); /*  deleted=0 and */
+      $this->throwExceptionOnError();
+      mysqli_stmt_bind_param($stmt, 'ii', $incentivebankid, $userid);
+      mysqli_stmt_execute($stmt);
+      $this->throwExceptionOnError();
+      $row = new stdClass();
+       mysqli_stmt_bind_result($stmt, $row->transactionincentiveID,$row->incentivetype);
+      mysqli_stmt_fetch($stmt);
+     $incentiveID = is_null($row->transactionincentiveID)?0:$row->transactionincentiveID;
+     $incentiveTypeID = is_null($row->incentivetype)?0:$row->incentivetype;
+      mysqli_stmt_free_result($stmt);
+      if($incentiveID>0 && $incentiveTypeID>0){
+          $stmt = mysqli_prepare($this->connection, "select IncentiveID, Country, IncentiveTypeID, Hierarchy, PTCORSTC, PerkWh, PerWSTC, PerWPTC, PercentageOfTotal,
+	MAX, STCMAX, PTCMAX, FITMAX, COMBINE, REFUNDABLE, NoOfYears, UserID, CreatedOn, transactionincentivesID,
+	STCKWMAX, PTCKWMAX, FITKWMAX, PERCENTAGEMAX, PERCENTAGEKWMAX, sector, otherincentivetype,
+	STCPERCMAX, PTCPERCMAX, FITPERCMAX, PERCENTAGEPERCMAX, Expirationdate, Linktoincentive,
+	Description
+	from
+	tbltransactionfederalincentives where transactionincentivesID=?");
+          $this->throwExceptionOnError();
+          mysqli_stmt_bind_param($stmt, 'i', $incentiveID);
+      } else{
+         $stmt = mysqli_prepare($this->connection, "select 	IncentiveID, Country, IncentiveTypeID, Hierarchy, PTCORSTC, PerkWh, PerWSTC,
+         		 PerWPTC, PercentageOfTotal,
+	MAX, STCMAX, PTCMAX, FITMAX, COMBINE, REFUNDABLE, NoOfYears, UserID, CreatedOn,incentivebankID as transactionincentivesID, STCKWMAX,
+         		PTCKWMAX,
+	FITKWMAX, PERCENTAGEMAX, PERCENTAGEKWMAX, sector, otherincentivetype,
+	STCPERCMAX, PTCPERCMAX, FITPERCMAX, PERCENTAGEPERCMAX, Expirationdate, Linktoincentive,
+	Description
+	from
+	tblfederalincentiverules where incentivebankID=?");
+          $this->throwExceptionOnError();
+          mysqli_stmt_bind_param($stmt, 'i', $incentivebankid);
+
+
+      }
+      mysqli_stmt_execute($stmt);
+      $this->throwExceptionOnError();
+      $row= new stdClass();
+      mysqli_stmt_bind_result($stmt, $row->IncentiveID, $row->Country, $row->IncentiveTypeID, $row->Hierarchy, $row->PTCORSTC, $row->PerkWh, $row->PerWSTC, $row->PerWPTC, $row->PercentageOfTotal, $row->MAX, $row->STCMAX, $row->PTCMAX, $row->FITMAX, $row->COMBINE, $row->REFUNDABLE, $row->NoOfYears, $row->UserID, $row->CreatedOn, $row->transactionincentivesID, $row->STCKWMAX,$row->PTCKWMAX,$row->FITKWMAX,$row->PERCENTAGEMAX,$row->PERCENTAGEKWMAX, $row->sector, $row->otherincentivetype, $row->STCPERCMAX, $row->PTCPERCMAX, $row->FITPERCMAX, $row->PERCENTAGEPERCMAX, $row->Expirationdate, $row->Linktoincentive, $row->Description);
+mysqli_stmt_fetch($stmt);
+     $TotalIncentive=$this->calculateIncentivevalue($row,$installedcost, $totalwatt,$incentiveTypeID);
+     return $TotalIncentive;
+  }
+  //Calculates State Incentive
+  public function getStateincentives($incentivebankid, $userid, $installedcost, $totalwatt){
+      if($incentivebankid==0 || $incentivebankid=='' || $incentivebankid==NULL || $userid==0 || $userid=='' || $userid==NULL){return 0;}
+      $stmt = mysqli_prepare($this->connection, "SELECT transactionincentiveID,incentivetype FROM tbltransactionincentives where incentiveBankID=? and userID=?"); /*deleted=0 and */
+      $this->throwExceptionOnError();
+      mysqli_stmt_bind_param($stmt, 'ii', $incentivebankid, $userid);
+      mysqli_stmt_execute($stmt);
+      $this->throwExceptionOnError();
+      $row = new stdClass();
+   mysqli_stmt_bind_result($stmt, $row->transactionincentiveID,$row->incentivetype);
+      mysqli_stmt_fetch($stmt);
+      $incentiveID = is_null($row->transactionincentiveID)?0:$row->transactionincentiveID;
+     $incentiveTypeID = is_null($row->incentivetype)?0:$row->incentivetype;
+      mysqli_stmt_free_result($stmt);
+      if($incentiveID>0 && $incentiveTypeID>0){
+          $stmt = mysqli_prepare($this->connection, "select IncentiveID, State, IncentiveTypeID, Hierarchy, PTCORSTC, PerkWh, PerWSTC, PerWPTC, PercentageOfTotal,
+	MAX, STCMAX, PTCMAX, FITMAX, COMBINE, REFUNDABLE, NoOfYears, UserID, CreatedOn, transactionincentivesID,
+	STCKWMAX, PTCKWMAX, FITKWMAX, PERCENTAGEMAX, PERCENTAGEKWMAX, sector, otherincentivetype,
+	STCPERCMAX, PTCPERCMAX, FITPERCMAX, PERCENTAGEPERCMAX, Expirationdate, Linktoincentive,
+	Description
+	from
+	tbltransactionstateincentives where transactionincentivesID=?");
+          $this->throwExceptionOnError();
+          mysqli_stmt_bind_param($stmt, 'i', $incentiveID);
+      } else{
+         $stmt = mysqli_prepare($this->connection, "select 	IncentiveID, State, IncentiveTypeID, Hierarchy, PTCORSTC, PerkWh, PerWSTC, PerWPTC, PercentageOfTotal,
+	MAX, STCMAX, PTCMAX, FITMAX, COMBINE, REFUNDABLE, NoOfYears, UserID, CreatedOn,incentivebankID as transactionincentivesID, STCKWMAX, PTCKWMAX,
+	FITKWMAX, PERCENTAGEMAX, PERCENTAGEKWMAX,  sector, otherincentivetype,
+	STCPERCMAX, PTCPERCMAX, FITPERCMAX, PERCENTAGEPERCMAX, Expirationdate, Linktoincentive,
+	Description
+	from
+	tblstateincentiverules where incentivebankID=?");
+          $this->throwExceptionOnError();
+          mysqli_stmt_bind_param($stmt, 'i', $incentivebankid);
+      }
+      mysqli_stmt_execute($stmt);
+      $this->throwExceptionOnError();
+      $row= new stdClass();
+      mysqli_stmt_bind_result($stmt, $row->IncentiveID, $row->State, $row->IncentiveTypeID, $row->Hierarchy, $row->PTCORSTC, $row->PerkWh,
+      $row->PerWSTC, $row->PerWPTC, $row->PercentageOfTotal, $row->MAX, $row->STCMAX, $row->PTCMAX, $row->FITMAX, $row->COMBINE,
+      $row->REFUNDABLE, $row->NoofYears, $row->UserID, $row->CreatedOn, $row->transactionincentivesID, $row->STCKWMAX,$row->PTCKWMAX,
+      $row->FITKWMAX,$row->PERCENTAGEMAX,$row->PERCENTAGEKWMAX,$row->sector, $row->otherincentivetype, $row->STCPERCMAX, $row->PTCPERCMAX,
+      $row->FITPERCMAX, $row->PERCENTAGEPERCMAX, $row->Expirationdate, $row->Linktoincentive, $row->Description);
+      mysqli_stmt_fetch($stmt);
+     $TotalIncentive=$this->calculateIncentivevalue($row,$installedcost, $totalwatt,$incentiveTypeID);
+     return $TotalIncentive;
+  }
+  //Calculates City Incentive
+  public function getCityincentives($incentivebankid, $userid, $installedcost, $totalwatt){
+    if($incentivebankid==0 || $incentivebankid=='' || $incentivebankid==NULL || $userid==0 || $userid=='' || $userid==NULL){return 0;}
+      $stmt = mysqli_prepare($this->connection, "SELECT transactionincentiveID,incentivetype FROM tbltransactionincentives where deleted=0 and incentiveBankID=? and userID=?");
+      $this->throwExceptionOnError();
+      mysqli_stmt_bind_param($stmt, 'ii', $incentivebankid, $userid);
+      mysqli_stmt_execute($stmt);
+      $this->throwExceptionOnError();
+      $row = new stdClass();
+      mysqli_stmt_bind_result($stmt, $row->transactionincentiveID,$row->incentivetype);
+      mysqli_stmt_fetch($stmt);
+      $incentiveID = is_null($row->transactionincentiveID)?0:$row->transactionincentiveID;
+      $incentiveTypeID = is_null($row->incentivetype)?0:$row->incentivetype;
+      mysqli_stmt_free_result($stmt);
+      if($incentiveID>0 && $incentiveTypeID>0){
+          $stmt = mysqli_prepare($this->connection, "select IncentiveID, City, IncentiveTypeID, Hierarchy, PTCORSTC, PerkWh, PerWSTC, PerWPTC, PercentageOfTotal,
+	MAX, STCMAX, PTCMAX, FITMAX, COMBINE, REFUNDABLE, NoOfYears, UserID, CreatedOn, transactionincentivesID,
+	STCKWMAX, PTCKWMAX, FITKWMAX, PERCENTAGEMAX, PERCENTAGEKWMAX, sector, otherincentivetype,
+	STCPERCMAX, PTCPERCMAX, FITPERCMAX, PERCENTAGEPERCMAX, Expirationdate, Linktoincentive,
+	Description
+	from
+	tbltransactioncityincentives where transactionincentivesID=?");
+          $this->throwExceptionOnError();
+          mysqli_stmt_bind_param($stmt, 'i', $incentiveID);
+      } else{
+         $stmt = mysqli_prepare($this->connection, "select 	IncentiveID, City, IncentiveTypeID, Hierarchy, PTCORSTC, PerkWh, PerWSTC, PerWPTC, PercentageOfTotal,
+	MAX, STCMAX, PTCMAX, FITMAX, COMBINE, REFUNDABLE, NoOfYears, UserID, CreatedOn,incentivebankID as transactionincentivesID, STCKWMAX, PTCKWMAX,
+	FITKWMAX, PERCENTAGEMAX, PERCENTAGEKWMAX, sector, otherincentivetype,
+	STCPERCMAX, PTCPERCMAX, FITPERCMAX, PERCENTAGEPERCMAX, Expirationdate, Linktoincentive,
+	Description
+	from
+	tblcityincentiverules where incentivebankID=?");
+          $this->throwExceptionOnError();
+          mysqli_stmt_bind_param($stmt, 'i', $incentivebankid);
+      }
+      mysqli_stmt_execute($stmt);
+      $this->throwExceptionOnError();
+      $row= new stdClass();
+      mysqli_stmt_bind_result($stmt, $row->IncentiveID, $row->City, $row->IncentiveTypeID, $row->Hierarchy, $row->PTCORSTC, $row->PerkWh, $row->PerWSTC, $row->PerWPTC, $row->PercentageOfTotal, $row->MAX, $row->STCMAX, $row->PTCMAX, $row->FITMAX, $row->COMBINE, $row->REFUNDABLE, $row->NoOfYears, $row->UserID, $row->CreatedOn, $row->incentivebankID, $row->STCKWMAX,$row->PTCKWMAX,$row->FITKWMAX,$row->PERCENTAGEMAX,$row->PERCENTAGEKWMAX,$row->sector, $row->otherincentivetype, $row->STCPERCMAX, $row->PTCPERCMAX, $row->FITPERCMAX, $row->PERCENTAGEPERCMAX, $row->Expirationdate, $row->Linktoincentive, $row->Description);
+mysqli_stmt_fetch($stmt);
+     $TotalIncentive=$this->calculateIncentivevalue($row,$installedcost, $totalwatt,$incentiveTypeID);
+     return $TotalIncentive;
+  }
+  //Calculates Utility Incentive
+  public function getUtilityincentives($incentivebankid, $userid, $installedcost, $totalwatt){
+        if($incentivebankid==0 || $incentivebankid=='' || $incentivebankid==NULL || $userid==0 || $userid=='' || $userid==NULL){return 0;}
+      $stmt = mysqli_prepare($this->connection, "SELECT transactionincentiveID,incentivetype FROM tbltransactionincentives where incentiveBankID=? and userID=?"); /*  deleted=0 and */
+      $this->throwExceptionOnError();
+      mysqli_stmt_bind_param($stmt, 'ii', $incentivebankid, $userid);
+      mysqli_stmt_execute($stmt);
+      $this->throwExceptionOnError();
+      $row = new stdClass();
+      mysqli_stmt_bind_result($stmt, $row->transactionincentiveID,$row->incentivetype);
+      mysqli_stmt_fetch($stmt);
+      $incentiveID = is_null($row->transactionincentiveID)?0:$row->transactionincentiveID;
+     $incentiveTypeID = is_null($row->incentivetype)?0:$row->incentivetype;
+      mysqli_stmt_free_result($stmt);
+      if($incentiveID>0 && $incentiveTypeID>0){
+          $stmt = mysqli_prepare($this->connection, "select IncentiveID,City, UtilityName, IncentiveTypeID , Hierarchy, PTCORSTC, PerkWh, PerWSTC , PerWPTC, PercentageOfTotal,
+	MAX, STCMAX , PTCMAX, FITMAX, COMBINE,NoOfYears, UserID, CreatedOn, transactionincentivesID,
+	STCKWMAX, PTCKWMAX, FITKWMAX, PERCENTAGEMAX, PERCENTAGEKWMAX , sector, otherincentivetype,
+	STCPERCMAX, PTCPERCMAX,FITPERCMAX, PERCENTAGEPERCMAX, Expirationdate, Linktoincentive,
+	Description
+	from
+	tbltransactionutilityincentives where transactionincentivesID=?");  /*    */
+          $this->throwExceptionOnError();
+          mysqli_stmt_bind_param($stmt, 'i', $incentiveID);
+      } else{
+         $stmt = mysqli_prepare($this->connection, "select 	IncentiveID, City,UtilityName IncentiveTypeID, Hierarchy, PTCORSTC, PerkWh, PerWSTC, PerWPTC, PercentageOfTotal,
+	MAX, STCMAX, PTCMAX, FITMAX, COMBINE,NoOfYears, UserID, CreatedOn,incentivebankID as transactionincentivesID, STCKWMAX, PTCKWMAX,
+	FITKWMAX, PERCENTAGEMAX, PERCENTAGEKWMAX, sector, otherincentivetype,
+	STCPERCMAX, PTCPERCMAX, FITPERCMAX, PERCENTAGEPERCMAX, Expirationdate, Linktoincentive,
+	Description
+	from
+	tblutilityrules where incentivebankID=?");
+          $this->throwExceptionOnError();
+          mysqli_stmt_bind_param($stmt, 'i', $incentivebankid);
+      }
+      mysqli_stmt_execute($stmt);
+      $this->throwExceptionOnError();
+      $row= new stdClass();
+      mysqli_stmt_bind_result($stmt, $row->IncentiveID, $row->City,$row->UtilityName, $row->IncentiveTypeID , $row->Hierarchy, $row->PTCORSTC, $row->PerkWh,  $row->PerWSTC, $row->PerWPTC, $row->PercentageOfTotal, $row->MAX, $row->STCMAX, $row->PTCMAX, $row->FITMAX, $row->COMBINE,
+       $row->NoOfYears, $row->UserID, $row->CreatedOn, $row->transactionincentivesID, $row->STCKWMAX,$row->PTCKWMAX,
+      $row->FITKWMAX,$row->PERCENTAGEMAX,$row->PERCENTAGEKWMAX ,$row->sector,  $row->otherincentivetype ,
+      $row->STCPERCMAX, $row->PTCPERCMAX, $row->FITPERCMAX, $row->PERCENTAGEPERCMAX, $row->Expirationdate, $row->Linktoincentive,
+      $row->Description ); /* */
+      mysqli_stmt_fetch($stmt);
+     $TotalIncentive=$this->calculateIncentivevalue($row,$installedcost, $totalwatt,$incentiveTypeID);
+     return $TotalIncentive;
+  }
+  //Calculates Final Discount
+  public function getDiscount($federalid, $stateid, $cityid, $utilityid, $userid, $installedcost, $totalwatt){
+
+
+              $discount=$this->getFederalincentives($federalid, $userid, $installedcost, $totalwatt);
+               $discount=$discount+ $this->getStateincentives($stateid, $userid, $installedcost, $totalwatt);
+               $discount=$discount+ $this->getCityincentives($cityid, $userid, $installedcost, $totalwatt);
+               $discount=$discount+ $this->getUtilityincentives($utilityid, $userid, $installedcost, $totalwatt);
+              return $discount;
+  }
+/**
+* Utility function to throw an exception if an error occurs
+* while running a mysql command.
+*/
+  private function throwExceptionOnError($link = null) {
+    if ($link == null) {
+      $link = $this->connection;
+    }
+    if (mysqli_error($link)) {
+      $msg = mysqli_errno($link) . ": " . mysqli_error($link);
+      throw new Exception('MySQL Error - ' . $msg);
+    }
+  }
+ }
+
+
+?>

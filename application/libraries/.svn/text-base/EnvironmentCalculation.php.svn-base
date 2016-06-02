@@ -1,0 +1,38 @@
+<?php
+class EnvironmentCalculation{
+
+public function getenvironmentdata($yearlyproduction){
+$barrelofoilconst=0.43;
+$treesavedconst=0.039;
+$bbqcylinderconst=0.024;
+$metricco2const=7.055*pow(10,-4);
+$gallonsconst=8.92*pow(10,-3);
+$co2offset=$yearlyproduction*$metricco2const;
+$barrelofoilsaved=($co2offset/$barrelofoilconst);
+$treesaved=($co2offset/$treesavedconst);
+$propaneofcylidersaved=($co2offset/$bbqcylinderconst);
+
+$gallonoffuel=($co2offset/$gallonsconst);
+$avgmpg=17;
+if($gallonoffuel!=0){
+$totalmil=($yearlyproduction/$gallonoffuel);
+$totalmiles=$totalmil*$avgmpg;
+ }
+ else{
+   $totalmiles=1;
+ }
+$co2offset= number_format($co2offset, 2, '.', '');
+$barrelofoilsaved= number_format($barrelofoilsaved, 2, '.', '');
+$treesaved= number_format($treesaved, 2, '.', '');
+$propaneofcylidersaved= number_format($propaneofcylidersaved, 2, '.', '');
+$totalmiles= number_format($totalmiles, 2, '.', '');
+//echo round($totalmiles);
+$environment=array('co2offset'=>$co2offset,'barrelofoilsaved'=>$barrelofoilsaved,'treesaved'=>$treesaved,'propaneofcylidersaved'=>$propaneofcylidersaved,'totalmiles'=>$totalmiles);
+return $environment;
+}
+
+
+}
+
+
+?>

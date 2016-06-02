@@ -1,0 +1,355 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class Setting_Controller extends QS_Controller {
+
+    public function __construct(){
+        parent::__construct();
+
+        if(!$this->isAuthenticated()){
+            redirect('account/login');
+        }
+    }
+
+    public function userSetting(){
+        $userInfo = $this->getSessionData('userinfo');
+        $companyInfo = $this->getSessionData('companyinfo');
+        $id = $userInfo['userID'];
+        $roleID = $userInfo['roleID'];
+        $this->load->library('CacheService');
+        $cahedvalue = $this->cacheservice;
+        $cahedvalue->createCache($id);
+        $cache = (Object)$cahedvalue->getCache($id);
+        $this->load->library('CreditPointService');
+        $obj = $this->creditpointservice;
+
+
+        $arr  = $this->getSessionData('companyinfo');
+        $subscriptiontype = $arr['subscriptiontype'];
+        if($subscriptiontype==4){
+            $this->newsubscriptiontype=$subscriptiontype-1;
+        }else{$this->newsubscriptiontype=0;
+        }
+
+        $company_model = $this->getModel('company_model');
+        $user_model = $this->getModel('user_model');
+        $companyid = $userInfo['companyID'];
+        $userid = $userInfo['userID'];
+        $requiredamount = $obj->getsubscriptionamount();
+        $this->nextmonthplan=$company_model->nextmonthplan($companyid);
+        $this->companyadmin=$company_model->get_role($userid);
+        $features = $user_model->features($roleID);
+        $this->setSessionData('features', $features);
+        $featuresInfo = $this->getSessionData('features');
+
+        $this->stylesheets(array(
+                'jquery.fancybox.css',
+                'css.css'
+        ));
+
+        $this->javascripts(array(
+                'jquery.fancybox.js',
+                'account/accountsettings.js'
+        ));
+        
+        $arr = array('userinfo' => $userInfo,
+                'companyinfo' => $companyInfo,
+                'requiredamount' => $requiredamount,
+                'cahedvalue' => $cache,
+                'userid' => $id,
+        		'this->companyadmin' => $this->companyadmin,
+        		'nextmonthplan' => $this->nextmonthplan,
+        		'subscriptiontype' => $subscriptiontype,
+                'newsubscriptiontype' => $this->newsubscriptiontype,
+                'featuresinfo' => $featuresInfo
+        );
+        $this->render('account/settings/accountsetting', $arr);
+    }
+
+            public function upgradehead(){
+        $userInfo = $this->getSessionData('userinfo');
+        $companyInfo = $this->getSessionData('companyinfo');
+        $this->load->library('CreditPointService');
+        $obj = $this->creditpointservice;
+        $arr  = $this->getSessionData('companyinfo');
+        $subscriptiontype = $arr['subscriptiontype'];
+        if($subscriptiontype==4){
+            $this->newsubscriptiontype=$subscriptiontype-1;
+        }else{$this->newsubscriptiontype=0;
+        }
+        $requiredamount = $obj->getsubscriptionamount();
+        $company_model = $this->getModel('company_model');
+        //$this->nextmonthplan=$company_model->nextmonthplan($companyid);
+
+                $this->stylesheets(array(
+                'jquery.fancybox.css',
+                'css.css'
+        ));
+
+        $this->javascripts(array(
+                'jquery.fancybox.js',
+                'account/accountsettings.js'
+        ));
+
+
+
+        $upg=array('userinfo' => $userInfo,
+                'companyinfo' => $companyInfo,
+                'requiredamount' => $requiredamount,
+        		'subscriptiontype' => $subscriptiontype,
+                'newsubscriptiontype' => $this->newsubscriptiontype,
+
+        );
+
+
+    	$this->setTitle('Upgrade');
+    	$this->render('account/settings/upgrade',$upg);
+   }
+
+
+
+
+
+
+
+
+    public function firsttimelogin(){
+        $companyInfo = $this->getSessionData('companyinfo');
+        $userInfo = $this->getSessionData('userinfo');
+        //print_r($userInfo);
+        $this->userid = $userInfo['userID'];
+        $this->ftimelogin = $userInfo['Firsttimelogin'];
+        $this->rolename = $userInfo['rolename'];
+        //print_r($this->rolename);
+        $this->owner=$userInfo['owner'];
+        $this->companyname=$companyInfo['companyname'];
+        //function to firsttime login
+        if($companyInfo['status']=='Active'){
+            $user_model = $this->getModel('user_model');
+            $this->query=$user_model->getinfo($this->userid);
+            $this->stylesheets(array(
+            		'jquery.tzCheckbox.css'
+            ));
+            $this->javascripts(array(  
+            		'jquery1.5.1.js',
+            		'jquery.tzCheckbox.js',
+            		'scriptbtn.js',
+            		'account/accountsettings.js'
+            ));                 
+$this->render('account/settings/myprofile', $this->userid,$this->owner,$this->companyname,$this->query,$this->ftimelogin,$this->rolename);
+        }
+
+    }
+    public function savedetails(){
+        $user_model = $this->getModel('user_model'); //print_r($user_model);
+        $this->query=$user_model->saveinfo();
+        //$this->render('account/settings/accountsetting');
+    }
+    public function changepwdinpopup(){
+        $user_model = $this->getModel('user_model');
+        $user_model->updatepwd();
+    }
+
+    public function getquickbucks(){
+        $user_model = $this->getModel('user_model');
+        $company_model = $this->getModel('company_model');
+        $userInfo = $this->getSessionData('userinfo');
+        $companyInfo = $this->getSessionData('companyinfo');
+        $subscriptiontype = $companyInfo['subscriptiontype'];
+        $companyid = $userInfo['companyID'];
+       // print_r($companyInfo);
+        $userid = $userInfo['userID'];
+        $this->autopay=$user_model->getAutoPay($companyid);
+        //getbalance  using creditpointservice api
+        $this->load->library('CreditPointService');
+        $cps = $this->creditpointservice;
+        $accountbal=$cps->getbalance($companyid);//for the purpose of accountbalance
+        $this->requiredamount=$cps->getsubamount($subscriptiontype);//for the purpose of upgrade & downgrade
+        $this->creditpoints = $cps->getbalance($companyid);
+        $amounts=$user_model->ammount();
+        $creditpoints=$user_model->points();
+        //converting the $accountbal to dollars format
+        $dollars=($amounts/$creditpoints)*($accountbal);
+
+        //fetching the current acountlevel
+        $accountlevel=$user_model->getsubscriptionname($companyid);
+        //fetching the subsctionpoints
+        $subscriptionpoints=$user_model->getsubscriptionpoints($subscriptiontype);
+        //converting into dollars
+        $subdollar=($amounts/$creditpoints)*($subscriptionpoints);
+        //$data=array('amount' => $amounts, 'points' => $creditpoints);
+        //echo $data;exit;
+        //fetch count of company members
+        $countmember=$user_model->c_member($companyid);
+        //echo $countmember;exit;
+        $reportcost=$user_model->reportcost($subscriptiontype);
+        //echo $reportcost;exit;
+        $reportdollar=($amounts/$creditpoints)*($reportcost);
+        //echo $reportdollar;exit;
+        //fetch next subscription payment date-from tblcompany
+        $nextpaymentdate=$user_model->subscriptiondate($companyid);
+        //convertion of date format and countong the nextpaymentdate
+        $date = strtotime(date($nextpaymentdate, strtotime($nextpaymentdate)) . " +30 day");
+        $dates=date('F d , Y',$date);//converting the format
+        $this->paymentfor = "Add Funds";
+        //fetching the getnextmonth plan
+        $getnextmonthplan=$user_model->getnextmonthplan($companyid);
+        //starting the autopay functionality
+        //$autopay=$user_model->saveauto($companyid);
+
+        //hardcoding of the totalreportpurchasedinlastmonth
+        $totalreportpurchasedlm=10;
+        $totalcostofreportslm=($totalreportpurchasedlm*$reportdollar);//calculating the totalcostofreportpurchasedinlastmonth
+
+        //$autopay=$this->quickbucksmodel->auto_pay($companyid);
+        //echo $autopay;exit;
+        //echo $getnextmonthplan;exit;
+        //  merging all data
+        
+        if($companyInfo['subscriptiontype']==4){
+        	$this->newsubscriptiontype=$companyInfo['subscriptiontype']-1;
+        }else{$this->newsubscriptiontype=0;
+        }
+        
+        $this->quickbucks = array( 'accountbalance' =>$dollars, 'acountlevel' =>$accountlevel, 'subpoints' =>$subdollar,
+                'countmem' =>$countmember, 'reportindolar'=>$reportdollar,'nxtmonthplan'=>$getnextmonthplan,'dates'=>$dates,
+                'totalreportpurchasedlm'=>$totalreportpurchasedlm,'totalcostofreportpurchsed'=>$totalcostofreportslm,'companyID'=>$companyid);
+
+        $this->nextmonthplan=$company_model->nextmonthplan($companyid);
+        $this->companyadmin=$company_model->get_role($userid);
+        $this->requiredamount=$cps->getsubscriptionamount();
+        //$this->subscriptionid=$_SESSION['subscriptionid'];
+        if($subscriptiontype==4){
+            $newsubscriptionid=$subscriptiontype-1;
+        }else{    $newsubscriptionid=0;
+        }
+
+        $this->stylesheets(array(
+                'jquery.fancybox.css',
+                'jquery.tzCheckbox.css'
+        ));
+
+        $this->javascripts(array(
+        		'jquery1.5.1.js',
+                'jquery.fancybox.js',
+                'jquery.tzCheckbox.js',
+                'scriptbtn.js',
+                'account/quickbucks.js'
+        ));
+        $data = array('newsubscriptionid' => $newsubscriptionid,
+                'subscriptiontype' => $subscriptiontype,
+        		'newsubscriptiontype' => $this->newsubscriptiontype,
+                'nextmonthplan' => $this->nextmonthplan,
+                'companyadmin' => $this->companyadmin,
+                'requiredamount' => $this->requiredamount,
+                'autopay' =>$this->autopay,
+                'userinfo' => $userInfo,
+        		'companyinfo' => $companyInfo,
+                'companyid' => $companyid
+        );
+       
+     
+        $cmsmodel = $this->getModel('cmsmodel');
+        $tt=$cmsmodel->getTooltips();
+        $tooltip=array();
+        foreach($tt as $row){
+        	$this->tooltip[$row['tttpname']] =array('ttpid'=>$row['ttpid'],'tttpname'=>$row['tttpname'],'ttptitle'=>$row['ttptitle'],'ttpdescription'=>$row['ttpdescription']);
+        }
+        
+        $this->render('account/settings/quickbucks', $data, $this->quickbucks, $this->tooltip);
+
+    }
+    public function gettooltip(){
+    	$userinfo=$this->getSessionData('userinfo');
+    	$userid=$userinfo['userID'];
+    	$this->load->helper('html');
+    	$customer_model = $this->getModel('customer_model');
+    	$this->tooltip=$customer_model->gettooltip($userid);
+    		
+    	echo  $this->tooltip;
+    
+    	//return trim($this->tooltip);
+    
+    }
+
+    public function add_funds(){
+        $userInfo = $this->getSessionData('userinfo');
+        $userid = $userInfo['userID'];
+        $companyid = $userInfo['companyID'];
+        $this->paymentfor = "Add Funds";
+
+        $this->load->library('CreditPointService');
+        $cps = $this->creditpointservice;
+        $creditpoints = $cps->getbalance($companyid);
+
+        $this->javascripts(array(
+                'jquery.fancybox.js',
+                'jquery-ui-1.9.2.custom.js',
+                'payment/addfunds.js'
+        ));
+
+        $this->stylesheets(array(
+                'jquery.fancybox.css'
+
+        ));
+
+        $data = array('userid'=>$userid,
+                'companyid'=>$companyid,
+                'creditpoints'=>$creditpoints);
+
+        $this->setTitle('AddFunds');
+        $this->render('account/settings/addfunds',$data);
+    }
+
+
+    public function goToCancelAccount()
+    {
+        $this->render('account/settings/cancelaccountfeedback');
+    }
+
+   
+
+    //for view transaction
+    public function viewtransaction(){
+        $this->load->helper('url');
+        $this->load->helper('form');
+        $this->load->helper('html');
+
+        $userInfo=$this->getSessionData('userinfo');
+        $companyInfo=$this->getSessionData('companyinfo');
+        $arr = array('userinfo' => $userInfo,
+                'companyinfo' => $companyInfo);
+
+        //print_r($companyInfo);
+
+        $this->javascripts(array(
+                'datetimepicker_css',
+                'jquery.dataTables.min.js',
+                'jquery.dataTables.columnFilter.js',
+                'jquery.autocomplete.js'
+        ));
+
+        $this->stylesheets(array(
+                'jquery.autocomplete.css',
+                'demo_table_jui.css'
+        ));
+
+        $this->render('account/settings/translogview_sub',$arr);
+    }
+
+    public function displaylog(){
+        $this->load->helper('url');
+        $this->load->helper('form');
+        $this->load->helper('html');
+         
+        $creditpointsystem_model=$this->getModel('creditpointsystem_model');
+        $companyname = $_POST['companyname'];
+        $this->companyid = $creditpointsystem_model->get_compantid($companyname);
+        $this->balance = $creditpointsystem_model->get_balance($this->companyid);
+        $this->transactiondetails = $creditpointsystem_model->get_transcationdata($this->companyid);
+        $this->load->view('account/settings/displaylog', $this->companyid, $this->balance, $this->transactiondetails);
+
+    }
+
+}
+
+?>

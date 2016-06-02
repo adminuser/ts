@@ -1,0 +1,81 @@
+<?php
+class CalculationService{
+  private $cache=null;
+	public function __construct(){
+		include_once ('CacheService.php');
+        $this->cache=new CacheService();
+	}
+//function to get customer data from cache
+public  function getCustomerdata($userid,$customerid,$designindex){
+
+  return $this->cache->getCustomercache($userid,$customerid,$designindex);
+}
+
+//function to check existing cache
+public function checkExistingCache($userid){
+
+  return $this->cache->checkExistingCache($userid);
+}
+
+public function getSpacadata($prjid,$design,$userid,$customerid,$firstyearacproduction){
+    $prjid= trim($prjid);
+  $cacheobj= $this->cache->getCustomercache($userid,$customerid,$design);
+   $sql1 = " SELECT * FROM tblsavedprojects WHERE ID='".$prjid."'  ";
+    $sql2 = "select count(*) as totalnoofpanels from tblsavedpanels where Prj_id ='".$prjid."'  ";
+
+    // echo $sql3; return;
+    $rs1 = mysql_query($sql1) or die(mysql_error());
+    $rs2 = mysql_query($sql2) or die(mysql_error());
+    $totalnoofpanels = mysql_fetch_array($rs2);
+
+    while($row = mysql_fetch_array($rs1))
+    {
+    $tblsavedprojectsdata= array(
+            'projectid'=>$row['ID'],
+            'projectname'=>$row['Descr'],
+            'azimuth'=>$row['Azimuth'],
+            'tilt'=>$row['Slope'],
+            'PType_id'=>$row['PType_id'],
+            'dateofmodify'=>date('Y-m-d H:i:s')
+
+          );
+
+    }
+    // $PType_id=$this->PType_id;
+    $PType_id = $tblsavedprojectsdata['PType_id'];
+
+    $sql3 = "select * from tblsolarpanel_specifications where solarpanelID =  '".$PType_id ."'  ";
+    $rs3 = mysql_query($sql3) or die(mysql_error());
+    while($row = mysql_fetch_array($rs3))
+    {
+      $tblsolarpanel_specifications=array(
+                         'manufacturer'=>$row['manufacturer'],
+                         'model'=>$row['model'],
+                         'costperwatt'=>$row['dollarperwatt']
+      ) ;
+    }
+
+    $costperwatt=$tblsolarpanel_specifications['costperwatt'] * $totalnoofpanels[0];
+    $nominalpower=240;
+
+    $installedcost=$nominalpower * $costperwatt;
+
+    //additional spaca contents other than above arrays
+    $totaldcpower = ($nominalpower * $totalnoofpanels[0]) / 1000 ;
+    //$firstyearacproduction=($nominalpower * $totalnoofpanels[0]) / 1000 * $costperwatt[0];
+
+    //addtional spaca contents moved to temporary array
+    $cmnarray=array(
+      'totaldcpower'=>$totaldcpower,
+      'firstyearacproduction'=>$firstyearacproduction,
+      'installedcost'=>$installedcost
+    );
+    $alldata=array_merge($tblsavedprojectsdata,$totalnoofpanels, $tblsolarpanel_specifications,$cmnarray);
+    return  $alldata;
+    }
+
+
+
+}
+
+?>

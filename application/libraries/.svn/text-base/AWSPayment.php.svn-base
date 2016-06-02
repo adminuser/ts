@@ -1,0 +1,228 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+//set_include_path(get_include_path() . PATH_SEPARATOR . APPPATH . '/libraries/');
+/**
+ * 
+ * @author Iqbal
+ *
+ */
+
+class AWSPayment extends QS_Controller
+{
+	const AWS_ACCESS_KEY_ID = 'AKIAIW7YQTRZBE4ISGGQ';
+	const AWS_SECRET_ACCESS_KEY = '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';
+
+	public function CBUISingleUsePipeline() {
+		//$paymentinfo = $this->getSessionData('paymentinfosub');
+		//print_r($paymentinfo); exit;
+		require_once('Amazon/CBUI/CBUISingleUsePipeline.php');
+
+		$pipeline = new Amazon_FPS_CBUISingleUsePipeline(self::AWS_ACCESS_KEY_ID, self::AWS_SECRET_ACCESS_KEY);
+		return $pipeline;
+	}
+
+	public function CBUIRecurringTokenPipeline(){
+
+		require_once('Amazon/CBUI/CBUIRecurringTokenPipeline.php');
+
+		$pipeline = new Amazon_FPS_CBUIRecurringTokenPipeline(self::AWS_ACCESS_KEY_ID, self::AWS_SECRET_ACCESS_KEY);
+		return $pipeline;
+	}
+
+	public function ReturnUrlVerification($params, $urlEndPoint){
+
+		require_once 'Amazon/IpnReturnUrlValidation/SignatureUtilsForOutbound.php';
+
+		$utils = new Amazon_FPS_SignatureUtilsForOutbound(self::AWS_ACCESS_KEY_ID, self::AWS_SECRET_ACCESS_KEY);
+
+		if($utils->validateRequest($params, $urlEndPoint, 'GET')){
+			$paymentresponse = $this->invokePay($params);
+			//print_r($paymentresponse);
+			//$paymentresponseinfo = $this->setSessionData('paymentresponse', $paymentresponse);
+			//print_r($paymentresponse); print_r($paymentresponseinfo); exit;
+		}
+		return $paymentresponse;
+	}
+
+	public function invokePay($params){
+
+		require_once 'Amazon/FPS/Model/Amount.php';
+		require_once 'Amazon/FPS/Client.php';
+		require_once 'Amazon/FPS/Model/PayRequest.php';
+
+		$service = new Amazon_FPS_CLIENT(self::AWS_ACCESS_KEY_ID, self::AWS_SECRET_ACCESS_KEY);
+		$request = new Amazon_FPS_Model_PayRequest($params);
+		$tokenid = $params['tokenID'];
+		$callerReference = $params['callerReference'];
+		$request->setSenderTokenId($tokenid);
+		$request->setCallerReference($callerReference);
+		$paymentinfo = $this->getSessionData('paymentinfo');
+		$transactionamount = $paymentinfo['amount'];
+
+		$amount = new Amazon_FPS_Model_Amount();
+		$amount->setCurrencyCode("USD");
+		$amount->setValue($transactionamount); //set the transaction amount here;
+		$request->setTransactionAmount($amount);
+
+		try {
+
+			$response = $service->pay($request);
+			$transactiontype = 'Pay';
+			/* echo ("Service Response\n");
+			 echo ("=============================================================================\n"); */
+
+			//echo("        PayResponse\n");
+			if ($response->isSetPayResult()) {
+				//echo("            PayResult\n");
+				$payResult = $response->getPayResult();
+				if ($payResult->isSetTransactionId())
+				{
+					//	echo("                TransactionId\n");
+					//echo("                    " . $payResult->getTransactionId() . "\n");
+					$transactionid = $payResult->getTransactionId();
+
+				}
+				if ($payResult->isSetTransactionStatus())
+				{
+					//echo("                TransactionStatus\n");
+					//echo("                    " . $payResult->getTransactionStatus() . "\n");
+					$transactionstatus = $payResult->getTransactionStatus();
+
+				}
+			}
+			if ($response->isSetResponseMetadata()) {
+				//echo("            ResponseMetadata\n");
+				$responseMetadata = $response->getResponseMetadata();
+				if ($responseMetadata->isSetRequestId())
+				{
+					//	echo("                RequestId\n");
+					//echo("                    " . $responseMetadata->getRequestId() . "\n");
+					$requestId = $responseMetadata->getRequestId();
+				}
+			}
+				
+		} catch (Amazon_FPS_Exception $ex) {
+			echo("Caught Exception: " . $ex->getMessage() . "\n");
+			echo("Response Status Code: " . $ex->getStatusCode() . "\n");
+			echo("Error Code: " . $ex->getErrorCode() . "\n");
+			echo("Error Type: " . $ex->getErrorType() . "\n");
+			echo("Request ID: " . $ex->getRequestId() . "\n");
+			echo("XML: " . $ex->getXML() . "\n");
+		}
+		//print_r($_GET); echo "<br>";  print_r($response); exit;
+		$paymentresponse = array('transactionid' => $transactionid,
+				'transactionstatus' => $transactionstatus,
+				'requestId' => $requestId,
+				'transactiontype' => $transactiontype,
+				'tokenID' => $tokenid);
+		//$paymentresponseinfo = $this->setSessionData('paymentresponse', $paymentresponse); print_r($paymentresponseinfo);
+		//echo 1;exit;
+		return $paymentresponse;
+	}
+	
+	public function ipnResponse(){
+
+		require_once 'Amazon/IpnReturnUrlValidation/SignatureUtilsForOutbound.php';
+
+		$utils = new Amazon_FPS_SignatureUtilsForOutbound(self::AWS_ACCESS_KEY_ID, self::AWS_SECRET_ACCESS_KEY);
+
+		if($utils->validateRequest($params, $urlEndPoint, 'POST')){
+			$this->invokePay($params);
+		}
+	}
+	
+	public function refundPayment($refund){
+		require_once 'Amazon/FPS/Client.php';
+		require_once 'Amazon/FPS/Model/RefundRequest.php';
+		
+		$callerReference = $refund['callerReference']; 
+		$transactionid = $refund['transactionid'];
+		$deductpoints = isset($refund['deductpoints']) ? $refund['deductpoints'] : '';
+		//$transactionrecordID = $refund['transactionrecordID'];
+		//$_SESSION['transactionamount'] = $refund['transactionamount'];
+		//$_SESSION['userid']=$_GET['userid'];
+		//$_SESSION['companyid']=$_GET['companyID'];
+		/* $_SESSION['transactionid'] = $transactionid;
+		$_SESSION['callerReference'] = $callerReference;
+		$_SESSION['deductpoints'] = $deductpoints;
+		$_SESSION['tokenID'] = $_GET['tokenID']; */
+		//$_SESSION['transactionrecordID'] = $transactionrecordID;
+		$callerDescription = 'Refund amount by super admin';
+		
+		$service = new Amazon_FPS_CLIENT(self::AWS_ACCESS_KEY_ID, self::AWS_SECRET_ACCESS_KEY);
+		$request = new Amazon_FPS_Model_RefundRequest();      
+		
+		
+		$request->setTransactionId($transactionid) ;
+		//$request->setRefundAmount($transactionamount);
+		$request->setCallerReference($callerReference);
+		$request->setCallerDescription($callerDescription) ;
+		
+		$response = $this->invokeRefund($service, $request);
+		
+		return $response;
+		
+	}
+	/**
+	 * Refund Action Sample
+	 *
+	 * Refunds a previously completed transaction.
+	 *
+	 * @param Amazon_FPS_Interface $service instance of Amazon_FPS_Interface
+	 * @param mixed $request Amazon_FPS_Model_Refund or array of parameters
+	 */
+	function invokeRefund(Amazon_FPS_Interface $service, $request)
+	{
+		$transactiontype = 'Refund';
+		$paymentfor = 'Refund Amount';
+		try {
+			$response = $service->refund($request);
+	
+			if ($response->isSetRefundResult()) {
+				//echo("            RefundResult\n");
+				$refundResult = $response->getRefundResult();
+				if ($refundResult->isSetTransactionId())
+				{
+					//echo("                TransactionId\n");
+					//echo("                    " . $refundResult->getTransactionId() . "\n");
+					$transactionid = $refundResult->getTransactionId();
+				}
+				if ($refundResult->isSetTransactionStatus())
+				{
+					//echo("                TransactionStatus\n");
+					//echo("                    " . $refundResult->getTransactionStatus() . "\n");
+					$transactionstatus = $refundResult->getTransactionStatus();
+				}
+			}
+			if ($response->isSetResponseMetadata()) {
+				//echo("            ResponseMetadata\n");
+				$responseMetadata = $response->getResponseMetadata();
+				if ($responseMetadata->isSetRequestId())
+				{
+					//echo("                RequestId\n");
+					//echo("                    " . $responseMetadata->getRequestId() . "\n");
+					$requestid = $responseMetadata->getRequestId();
+				}
+			}
+	
+		} catch (Amazon_FPS_Exception $ex) {
+			echo("Caught Exception: " . $ex->getMessage() . "\n");
+			echo("Response Status Code: " . $ex->getStatusCode() . "\n");
+			echo("Error Code: " . $ex->getErrorCode() . "\n");
+			echo("Error Type: " . $ex->getErrorType() . "\n");
+			echo("Request ID: " . $ex->getRequestId() . "\n");
+			echo("XML: " . $ex->getXML() . "\n");
+		}
+		
+		$refundresponse = array('transactionid' => $transactionid,
+				'transactionstatus' => $transactionstatus,
+				'requestId' => $requestid,
+				'transactiontype' => $transactiontype,
+				'paymentfor' => $paymentfor);
+		//$paymentresponseinfo = $this->setSessionData('paymentresponse', $paymentresponse); print_r($paymentresponseinfo);
+		//echo 1;exit;
+		print_r($refundresponse); 
+		return $refundresponse;
+	}
+
+}

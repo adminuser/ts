@@ -1,0 +1,31 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class Transactions_Controller extends QS_Controller {
+
+	public function translog_sub() {
+		$userInfo = $this->getSessionData('userinfo');
+		$companyInfo = $this->getSessionData('companyinfo');
+		$this->stylesheets(array(
+				'jquery-ui-1.9.2.custom.min.css',
+				'demo_table_jui.css',
+				'jquery.autocomplete.css'
+		));
+
+		$this->javascripts(array(
+				'datetimepicker_css.js',
+				'jquery-ui-1.9.2.custom.min.js',
+				'jquery.dataTables.min.js',
+				'jquery.dataTables.columnFilter.js',
+				'account/accountsettings.js'
+		));
+		$arr = array('userinfo' => $userInfo,
+					'companyinfo' => $companyInfo); 
+
+		$this->render('account/settings/translogview_sub', $arr);
+
+	}
+	public function displaylog(){
+		
+		echo "Under Constructions";
+	}
+}

@@ -1,0 +1,179 @@
+ <?php 
+ 
+   class CacheService {
+
+   	public function __construct() {
+   		
+   	}
+   	
+        /*This Function Checks for existing cache using userid.
+        */
+
+    public function checkExistingCache($key){
+
+                     $memcache = new Memcache;
+                     $memcache->connect('localhost', 11211) or die ("Could not connect");
+                         // $cache=new SimpleCache();
+                          //$flag=$cache->exists($key);
+                         // $flag=$memcache->exists($key);
+                    $data=$memcache->get($key);
+                   if($data){
+                     return 'TRUE';
+                   } else{
+                     return 'FALSE';
+                   }
+
+
+         }
+
+
+
+        /*This Function will Create User Cache.
+        */
+  public function createCache($key){
+  	$CI=&get_instance();
+  $CI->load->model('company_model');
+  $value=$CI->company_model->getCacheValues($key);
+
+   //print_r($value);exit;
+
+
+       $memcache = new Memcache;
+       $memcache->connect('localhost', 11211) or die ("Could not connect ");
+
+     // $value= array_merge($data,$element);
+
+         // cache a value
+        $memcache->set($key,$value,false,1000);
+        return $value;
+    }
+
+
+
+        /* This Function will get User Cache.
+        */
+        public function getCache($key){
+
+               //$cache=new SimpleCache();
+                     $memcache = new Memcache;
+                     $memcache->connect('localhost', 11211) or die ("Could not connect");
+               //return $cache->get($key);
+               return $memcache->get($key);
+
+        }
+
+
+
+
+
+
+        /* This Function will get View Element.
+        */
+        public function getViewElement($key){
+                     $memcache = new Memcache;
+                     $memcache->connect('localhost', 11211) or die ("Could not connect");
+                   //$cache=new SimpleCache();
+              //return $cache->getViewElement($key);
+                   return $memcache->get($key);
+
+           }
+
+
+
+
+       // This Function will delete the cache
+
+        public Function deleteCache($key){
+            $memcache = new Memcache;
+            $memcache->connect('localhost', 11211) or die ("Could not connect");
+
+              $memcache->delete($key);
+
+       }
+
+
+      // This Function will delete the customer cache
+
+       public Function deletecustomerCache($key1,$key2){
+             $key =$key1.'_'.$key2;
+             $memcache = new Memcache;
+             $memcache->connect('localhost', 11211) or die ("Could not connect") ;
+           $memcache->delete($key);
+
+       }
+
+
+
+     /**
+	 * Utility function to throw an exception if an error occurs
+	 * while running a mysqli command.
+	 */
+	private function throwExceptionOnError($link = null) {
+		if($link == null) {
+			$link = $this->connection;
+		}
+		if(mysqli_error($link)) {
+			$msg = mysqli_errno($link) . ": " . mysqli_error($link);
+			throw new Exception('mysqli Error - '. $msg);
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+ //Generalised functions for caching   - start
+
+
+
+
+	//Function to create customer cache before moving to design tool
+
+	public function createCustomerCache($customer,$userid,$customerid,$designindex,$prjid){
+
+        return  $customer;
+	}
+
+
+
+
+
+     	//Function to create spaca cache after coming from design tool
+
+	public function createSpacaCache($customer,$userid,$customerid,$designindex,$prjid,$acpower){
+
+         $calservice=new CalculationService();
+
+
+
+         return $customer;
+    }
+
+
+
+
+
+
+	//Function to get customer cache
+
+  	public function getCustomercache($userid,$customerid,$designindex){
+
+             $memcache = new Memcache;
+                 $memcache->connect('localhost', 11211) or die ("Could not connect");
+                 $key= $userid."_".$customerid;
+
+                 $customercache=(array)$memcache->get($key);
+                    return $customercache;
+
+        }
+
+
+
+}
+
+?>

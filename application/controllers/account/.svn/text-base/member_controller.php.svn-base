@@ -1,0 +1,169 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class Member_Controller extends QS_Controller {
+	public function __construct(){
+		parent:: __construct();
+		if(!$this->isAuthenticated()){
+			//redirect("dashboard");
+			$this->render('account/auth/login_form');
+		}
+
+	}
+
+	public function index(){
+        $this->stylesheets(array(
+				'jquery.fancybox.css',
+				'css.css'
+		));
+
+		$this->javascripts(array(
+                'jquery.fancybox.js',
+                'jquery.fancybox.pack.js',
+				'account/managemembers.js'));
+
+		$this->load->model('user_model');
+		$members = $this->user_model->getManageMembers();
+		$this->render('account/settings/managemembers', array('members'=>$members));
+   }
+
+
+   public function openpopup(){
+              $this->stylesheets(array(
+				'jquery.fancybox.css',
+				'css.css'
+		));
+
+		$this->javascripts(array(
+                'jquery.fancybox.js',
+				'account/managemembers.js'));
+
+		$this->load->model('user_model');
+		$members = $this->user_model->getManageMembers();
+		$this->render('account/settings/managememberspopup', array('members'=>$members));
+
+
+
+   }
+
+
+
+	public function addMembers(){
+		$userinfo=$this->getSessionData('userinfo');
+		$companyInfo = $this->getSessionData('companyinfo');
+		$user_model = $this->getModel('user_model');
+		$data =	$user_model->addMembers();
+
+		$Activation_url = $data['Activation_url'];
+		//echo($Activation_url);exit;
+
+
+		//echo($to);exit;
+		$firstname=$this->input->post('txtfirstname');
+		$lastname=$this->input->post('txtlastname');
+		$emailid=$userinfo['emailid'];
+		$fname=$userinfo['firstname'];
+		$lname=$userinfo['lastname'];
+		$password1 = $data['password'];
+		$password = base64_decode($password1);
+		//echo($password1);
+		$companyname=$companyInfo['companyname'];
+		//echo($companyname);exit;
+
+		$to=$this->input->post('txtemailid');
+		$eid=$this->input->post('txtemailid');
+		$subject='Welcome to Quicksolar';
+		$from=$userinfo['emailid'];
+		$body = $this->load->view('email/members',array( 'firstname'=>$firstname,
+				'lastname'=>$lastname,
+				'eid'=>$eid,
+				'password'=>$password,
+				'companyname'=>$companyname,
+				'fname'=>$fname,
+				'lname'=>$lname,
+				'Activation_url'=>$Activation_url),true);
+		$mailer=$this->getMailer();
+		$Message=$this->getMailerMessage($to, $body, $subject, $from);
+		   //print_r($Message);exit;
+		if ($mailer->sendEmail($Message) == TRUE) {
+			$comment = 'Message sent successfully';
+
+		}
+		else{
+			$comment = 'Emailid is Invalid, request could not be processed';
+			//echo "Emailid is Invalid, request could not be processed";
+
+		}
+
+		 //$this->index();// imran modified this below code
+	  	redirect('account/member_controller');
+
+
+	}
+	public function editMember(){
+		//  $userid = $this->input->post('userID');
+
+		$user_model = $this->getModel('user_model');
+		$data =	$user_model->updateMembers();
+
+		//	$this->load->model('pro/managementmodel');
+		//	$this->managementmodel->updateMembers();
+		$this->index();
+	}
+
+
+	//Function to Reset Password
+	public function resetPassword() {
+		$userinfo=$this->getSessionData('userinfo');
+		$companyInfo = $this->getSessionData('companyinfo');
+		$fname=$userinfo['firstname'];
+		$lname=$userinfo['lastname'];
+		$companyname=$companyInfo['companyname'];
+
+		$id = $this->input->post('euserid');
+		$firstname = $this->input->post('firstname');
+		$lastname= $this->input->post('lastname');
+		$eid= $this->input->post('eid');
+
+		$user_model = $this->getModel('user_model');
+		$this->q =	$user_model->resetPassword();
+		$this->password = base64_decode($this->q[0]['password']);
+		//$this->emailid = $this->q[0]['emailid'];
+		$this->userid = $this->q[0]['userID'];
+		$this->username = $this->q[0]['username'];
+		$to=$this->input->post('eid');
+
+		$subject='Welcome to Quicksolar';
+		$from=$userinfo['emailid'];
+		$body = $this->load->view('email/resetpassword',array( 'firstname'=>$firstname,
+				'lastname'=>$lastname,
+				'eid'=>$eid,
+				'password'=>$this->password,
+				'companyname'=>$companyname,
+				'fname'=>$fname,
+				'lname'=>$lname),true);
+		$mailer=$this->getMailer();
+		$Message=$this->getMailerMessage($to, $body, $subject, $from);
+		if ($mailer->sendEmail($Message) == TRUE) {
+			$comment = 'Message sent successfully';
+			echo "success";
+			return $success="success";
+		}
+		else{
+			$comment = 'Emailid is Invalid, request could not be processed';
+			echo "Emailid is Invalid, request could not be processed";
+
+		}
+	}
+
+
+	public function deleteMember()
+	{
+
+		$id = $this->input->post('euserid');
+		$user_model = $this->getModel('user_model');
+		$data =	$user_model->deleteMembers();
+		$this->index();
+
+	}
+
+}

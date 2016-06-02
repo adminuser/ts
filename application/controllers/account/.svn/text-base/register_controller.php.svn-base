@@ -1,0 +1,198 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class Register_Controller extends QS_Controller {
+
+	public function __construct(){
+		parent:: __construct();
+	}
+
+	public function index()
+	{
+		$this->setTitle('Signup');
+		$this->load->helper('url');
+		$user_model = $this->getModel('user_model');
+	
+		$this->query1 = $user_model->subscription();		
+ 		$this->tier1 = $user_model->subscriptiontier1();
+		$this->tier2 = $user_model->subscriptiontier2();
+		$this->tier3 = $user_model->subscriptiontier3();
+		$this->tier4 = $user_model->subscriptiontier4();
+		
+		$this->stylesheets(array(
+			'jquery.fancybox.css'
+		));
+
+		$this->javascripts(array(
+				'jquery.fancybox.js',
+				'account/signup.js',
+				'jquery-ui-1.9.2.custom.js'
+		));
+		
+		$this->render('account/register/register_form', array(
+			'$this->query1' => $this->query1,'$this->tier1'=>$this->tier1,'$this->tier2'=>$this->tier2,'$this->tier3'=>$this->tier3,'$this->tier4'=>$this->tier4
+		)); 
+	}
+	
+	//function to create new user
+	public function create() {
+
+		$this->load->library('form_validation');
+		$this->form_validation->set_rules('txtuname', 'emailid', 'required');
+		//$this->form_validation->set_rules('txtcpass', 'confirmpassword', 'required|matches[txtpass]|min_length[6]');
+		$user_model = $this->getModel('user_model');
+		if ($this->form_validation->run() === FALSE) {
+			$this->setTitle('Signup');
+			$this->query1 = $user_model->subscription();
+			$this->tier1 = $user_model->subscriptiontier1();
+			$this->tier2 = $user_model->subscriptiontier2();
+			$this->tier3 = $user_model->subscriptiontier3();
+			$this->tier4 = $user_model->subscriptiontier4();
+			$this->render('account/register/register_form', array(
+					'$this->query1' => $this->query1,'$this->tier1'=>$this->tier1,'$this->tier2'=>$this->tier2,'$this->tier3'=>$this->tier3,'$this->tier4'=>$this->tier4
+			));
+		} else {
+			 
+			$this->query = $user_model->create();
+			$Activation_url = $this->query[0]->Activation_url;
+			$to = $this->query[0]->emailid;
+			$firstname = $this->query[0]->firstname;
+			$password = $this->query[0]->password;
+			$password = base64_decode($password);
+			$username = $this->query[0]->username;
+			$from='thunderpaste@gmail.com';
+			$subject='Welcome to Quicksolar';
+			$body = $this->load->view('email/register_success',array('Activation_url'=>$Activation_url,'username'=>$username,'password'=>$password,'firstname'=>$firstname),true);
+     		$mailar=$this->getMailer();
+			$Message=$this->getMailerMessage($to, $body, $subject, $from);
+			
+			if ($mailar->sendEmail($Message) == TRUE) {
+				$this->status='success';
+			}
+			else{
+				$this->status='failure';
+			}
+
+			$this->render('account/settings/succesigningup', $this->status);
+	
+		}
+	}
+	
+  public function activate() {  		
+  	  	$this->setTitle('Activation page');
+  	  	parse_str($_SERVER['QUERY_STRING'], $response);
+        $user_model = $this->getModel('user_model');
+        $this->query = $user_model->activate();
+        if (($this->query['subscriptiontype'] == 3) || ($this->query['subscriptiontype'] == 4)) {
+       $userInfo=array('userID'=>$this->query['userID'],'companyID'=>$this->query['companyID'], 'gateway' => $response['gateway']);
+       $companyinfo=array('companyID'=>$this->query['companyID'],'subscriptiontype'=>$this->query['subscriptiontype'],
+       		'amount'=>$this->query['amount'],'credits'=>$this->query['credit'],'currencyCode'=>$this->query['currencyCode'],
+       		'section'=>'subscription','paymentfor'=>'subscription_payment');
+            $this->setSessionData('userinfo', $userInfo);
+            $this->setSessionData('companyinfo', $companyinfo);
+           // header('location:/quicksolar/payment/payment/subpaymentrequest');
+           redirect('payment/subpaymentrequest');
+            
+        } else {
+        	$this->render('account/register/activation', $this->query);
+            
+        }
+    }
+    //validation for user name is unque
+    public function checkuname() {
+    	$usrname = $_POST['username'];
+    	$this->usrname = $usrname;
+    	$user_model = $this->getModel('user_model');
+    	$this->query = $user_model->checkuname($this->usrname);
+    	echo $this->query ;
+    	//$this->load->view('registerview/checkuname', $this->query);
+    }
+    
+    //validation for emailid is unque
+    public function checkemial() {
+    	$email = $_POST['email'];
+    	$this->email = $email;
+    	$user_model = $this->getModel('user_model');
+    	$this->query = $user_model->checkemial($this->email);
+    	//$this->load->view('registerview/checkemial', $this->query);
+    }
+    //validation for company name is unque
+    public function checkcompany() {
+    	$this->company = $_POST['companyname'];
+    	$user_model = $this->getModel('user_model');
+    	$this->query = $user_model->checkcompanyname($this->company);
+    	//$this->load->view('registerview/checkcompanyname', $this->query);
+    }
+    
+    /* modified by sandeep - password*/
+     public function password($username){
+     $this->load->library('form_validation');
+      //  $username = $_POST['mailpwd'];
+     // $username=$this->input->post('mailpwd');
+      //   echo  $username;exit;
+       $user_model = $this->getModel('user_model');
+       
+       
+    $password = $user_model->password(6);
+
+	$f = $user_model->fetchFirstname($username);
+  $firstname = $f->firstname;
+//	echo  $firstname ; exit;
+     $to=$username;
+     //echo $to; exit;
+
+     $subject='Welcome to Quicksolar';
+     $from='thunderpaste@gmail.com';
+     $body = $this->load->view('email/forgotpassword',array( 'firstname'=>$firstname,
+     		'username'=>$username,
+     		'password'=>$password),true);
+     $mailer=$this->getMailer();
+     $Message=$this->getMailerMessage($to, $body, $subject, $from);
+     if ($mailer->sendEmail($Message) == TRUE) {
+     	$comment = 'Message sent successfully';
+       	$this->success='success';
+        $password = base64_encode($password);
+    	$user_model->saveNewPassword($username,$password);
+     	$this->render('account/register/successpassword',$this->success);
+     }
+     else{
+     	$comment = 'Emailid is Invalid, request could not be processed';
+		$this->success="failure";
+        $this->render('account/register/successpassword',$this->success);
+     }
+//  $this->render('account/register/successpassword',$this->success);
+
+
+}
+
+/*  sandeep - passwordHeader*/
+public function passwordHeader(){
+	$username=$this->input->post('mailpwd');
+   $this->password($username);
+  // $this->render('account/register/successpassword',$this->success);
+}
+
+
+/*  sandeep - passwordSignup*/
+public function passwordSignup(){
+	$username=$this->input->post('mailsg');
+	$this->password($username);
+}
+
+
+/*  sandeep - passwordLogin*/
+public function passwordLogin(){
+	$username=$this->input->post('maillg');
+	$this->password($username);
+}
+
+public function passwordfps(){
+	$username=$this->input->post('mailfp');
+	$this->password($username);
+}
+
+public function passwordreqs(){
+	$username=$this->input->post('mailrq');
+	$this->password($username);
+}
+
+}

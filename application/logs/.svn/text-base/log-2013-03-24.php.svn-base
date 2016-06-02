@@ -1,0 +1,33 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed'); ?>
+
+ERROR - 2013-03-24 23:04:44 --> 404 Page Not Found --> welcome
+ERROR - 2013-03-24 23:04:46 --> 404 Page Not Found --> welcome
+ERROR - 2013-03-24 23:04:46 --> 404 Page Not Found --> welcome
+ERROR - 2013-03-24 23:04:54 --> 404 Page Not Found --> welcome
+ERROR - 2013-03-24 23:04:59 --> Severity: Notice  --> Undefined property: Auth::$template D:\xampp\htdocs\codeigniter\application\core\QS_Controller.php 13
+ERROR - 2013-03-24 23:06:39 --> Severity: Notice  --> Undefined variable: sidebar D:\xampp\htdocs\codeigniter\application\views\templates\default.php 21
+ERROR - 2013-03-24 23:06:39 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:07:06 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:07:08 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:19:00 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:19:06 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:19:36 --> Severity: Notice  --> Undefined property: Auth::$tempalate D:\xampp\htdocs\codeigniter\application\core\QS_Controller.php 58
+ERROR - 2013-03-24 23:20:06 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:20:06 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:20:06 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:20:06 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:21:07 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:21:07 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:21:07 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:21:07 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:21:36 --> 404 Page Not Found --> css
+ERROR - 2013-03-24 23:21:36 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:21:36 --> 404 Page Not Found --> css
+ERROR - 2013-03-24 23:21:36 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:21:36 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:21:36 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:21:46 --> 404 Page Not Found --> account/main.css
+ERROR - 2013-03-24 23:21:46 --> 404 Page Not Found --> css
+ERROR - 2013-03-24 23:21:46 --> 404 Page Not Found --> js
+ERROR - 2013-03-24 23:21:46 --> 404 Page Not Found --> css
+ERROR - 2013-03-24 23:21:46 --> 404 Page Not Found --> js

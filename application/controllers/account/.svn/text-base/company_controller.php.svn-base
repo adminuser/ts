@@ -1,0 +1,421 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class Company_Controller extends QS_Controller {
+	public function __construct(){
+		parent:: __construct();
+		if(!$this->isAuthenticated()){
+			//redirect("dashboard");
+			$this->render('account/auth/login_form');
+		}
+	
+	}
+
+	public function index(){
+
+		$this->javascripts(array('account/company.js'));
+		$userinfo=$this->getSessionData('userinfo');
+        //print_r($userinfo);
+		$companyInfo = $this->getSessionData('companyinfo');
+		//$_POST['txtcompanyid']=$companyid;
+		$companyid=$userinfo['companyID'];
+	    $userID=$userinfo['userID'];
+        $this->ftimelogin=$userinfo['Firsttimelogin'];
+
+
+   		$user_model = $this->getModel('user_model');
+
+		$companyinfo =	$user_model->company($companyid,$userID); //echo $companyinfo[0]->companystreetaddress; print_r($companyinfo); exit;
+		$companyinfo = (array)$companyinfo[0];
+        $a = $companyinfo['companytype'];
+        $b  = $companyinfo['companystreetaddress'];
+        list($te1)=explode(',', $a);
+
+        $olast=explode(',', $a);
+        if(isset($olast[1])){
+        $olast = $olast[1];
+        }else{
+          $olast = "";
+        }
+
+
+        $last=explode(',', $b);
+        if(isset($last[1])){
+        $last = $last[1];
+        }else{
+          $last = "";
+        }
+
+
+
+        list($last1)=explode(',', $b);
+
+        //$first = $last[0];
+
+        $this->other= $te1;
+        if(isset($olast))
+        { $this->olast=$olast;
+        }else{
+        $this->olast='';
+        }
+        $this->str1=$last1;
+        $this->str2=$last;
+        $this->olast=$olast;
+
+        $this->other= $te1;
+
+        $this->str1=$last1;
+        $this->str2=$last;
+
+
+         $arr= array('other' => $this->other,
+                     'stret1' => $this->str1,
+                     'street2' => $this->str2,
+                     'olast' => $this->olast,
+                     'ftimelogin'    => $this->ftimelogin
+
+                );
+
+
+
+
+
+
+		$this->render('account/settings/company' ,array('companydata'=>$companyinfo),$arr);
+		
+	}
+	
+	public function editCompany() {
+//		$i=$_POST['imagepath'];
+//	$imagepath=$this->input->post('imagepath');
+//		echo $i; exit;
+
+		 //niveditha-change of companyid
+		$filename = $this->do_upload();
+		$uploadarray = isset($this->data) ? $this->data : 0;
+		// print_r($uploadarray);
+
+		$user_model = $this->getModel('user_model');
+		if(isset($_POST['txtcompanytype'])){
+			$txtcompanytype= $_POST['txtcompanytype'];
+			$_SESSION['txtcompanytype'] = $txtcompanytype;
+
+			// print_r($_SESSION['txtcompanytype']);
+		}
+		$_POST['dpdstatus']='1';
+	
+		$_POST['txtcompanyid']=$this->input->post('txtcompanyid');
+	    $txtcompanytype =  $this->input->post('txtcompanytype');
+       $txtother =  $this->input->post('txtother');
+       $a=array($txtcompanytype,$txtother);
+        $comma_separated = implode(",", $a);
+        list($te1)=explode(',', $comma_separated);
+
+
+
+        $firstaddrs= $this->input->post('txtcompanyaddress');
+        $secondaddrs= $this->input->post('txtcompanyaddress2');
+        $b=array($firstaddrs,$secondaddrs);
+        $streetaddress = implode(",", $b);
+
+
+
+
+
+
+
+         //print_r($saddress);exit;
+
+   //   print_r($te1) ; exit;
+
+		$value =	$user_model->editcompany($uploadarray,$comma_separated,$streetaddress);
+
+	//	$accountsettings= new Setting_Controller();
+	//	$accountsettings->userSetting();
+		$this->userSetting($te1,$streetaddress,$comma_separated);
+	
+	}
+
+	
+
+	public function userSetting($te1,$streetaddress,$comma_separated){
+		 //print_r($te1) ; exit;
+		//  $i=$_POST['imagepath'];
+		//	$imagepath=$this->input->post('imagepath');
+		//		echo $i; exit;
+		$userInfo = $this->getSessionData('userinfo');
+		$companyInfo = $this->getSessionData('companyinfo');
+		$id = $userInfo['userID'];
+		$roleID = $userInfo['roleID'];
+        $this->ftimelogin=$userInfo['Firsttimelogin'];
+		$this->load->library('CacheService');
+		$cahedvalue = $this->cacheservice;
+		$cahedvalue->createCache($id);
+		$cache = (Object)$cahedvalue->getCache($id);
+		$this->load->library('CreditPointService');
+		$obj = $this->creditpointservice;
+	
+	
+		$arr  = $this->getSessionData('companyinfo');
+		if($arr['subscriptiontype']==4){
+			$this->newsubscriptiontype=$arr['subscriptiontype']-1;
+		}else{$this->newsubscriptiontype=0;
+		}
+	
+		$company_model = $this->getModel('company_model');
+		$user_model = $this->getModel('user_model');
+		$companyid = $userInfo['companyID'];
+		$userid = $userInfo['userID'];
+		$requiredamount = $obj->getsubscriptionamount();
+		$this->nextmonthplan=$company_model->nextmonthplan($companyid);
+		$this->companyadmin=$company_model->get_role($userid);
+		$features = $user_model->features($roleID);
+		$this->setSessionData('features', $features);
+		$featuresInfo = $this->getSessionData('features');
+
+        list($last1)=explode(',', $streetaddress);
+
+        $last=explode(',', $streetaddress);
+        $last = $last[1];
+
+        $olast=explode(',', $comma_separated);
+        $olast = $olast[1];
+
+        //$first = $last[0];
+
+        $this->other= $te1;
+        $this->olast= $olast;
+        $this->str1=$last1;
+        $this->str2=$last;
+
+        //$this->str2=$first;
+
+		$this->stylesheets(array(
+				'jquery.fancybox.css',
+				'css.css'
+		));
+
+		$this->javascripts(array(
+				'jquery.fancybox.js',
+				'account/accountsettings.js'
+		));
+	
+		$arr = array('userinfo' => $userInfo,
+				'companyinfo' => $companyInfo,
+				'requiredamount' => $requiredamount,
+				'cahedvalue' => $cache,
+				'userid' => $id,
+				'newsubscriptiontype' => $this->newsubscriptiontype,
+				'featuresinfo' => $featuresInfo,
+                'other' => $this->other,
+                'stret1' => $this->str1,
+                'street2' => $this->str2,
+                'olast' => $this->olast,
+                'ftimelogin' => $this->ftimelogin
+
+		);
+         $this->javascripts(array('account/company.js'));
+        $userinfo=$this->getSessionData('userinfo');
+        //print_r($userinfo);
+		$companyInfo = $this->getSessionData('companyinfo');
+		//$_POST['txtcompanyid']=$companyid;
+		$companyid=$userinfo['companyID'];
+	    $userID=$userinfo['userID'];
+        $Ftimelogin=$userinfo['Firsttimelogin'];
+
+		$user_model = $this->getModel('user_model');
+		$companyinfo =	$user_model->company($companyid,$userID);
+		$companyinfo = (array)$companyinfo[0];
+        //print_r($companyinfo);
+
+        //$tel = (array)$te1[0];
+         //print_r($te1);exit;
+		//print_r($arr);
+
+         //$basepath = '/quicksolar';
+     if($userinfo['Firsttimelogin']!=0){
+       header("Location: ".base_url('/dashboard/dashboard_controller/gotoDashboard')."");
+        }else{
+        $this->render('account/settings/company',array('companydata'=>$companyinfo),$arr);
+         }
+//$this->render('account/settings/accountsetting', $arr);
+ }
+
+
+
+	
+	//function to upload an image to the company
+	public function do_upload(){
+
+		$config['upload_path'] = './uploads/';
+		$config['allowed_types'] = 'gif|jpg|jpeg|png';
+		$config['max_size'] = '4096';
+		$config['max_width'] = '0';
+		$config['max_height'] = '0';
+		$this->load->library('upload', $config);
+	
+		if (!$this->upload->do_upload("userfile1")) {
+			$error = array('error' => $this->upload->display_errors());
+			//print_r($error) ;
+			if (strcmp($error['error'], "You did not select a file to upload.") !== false) {
+				$this->data[] = "0";
+			}
+		} else {
+	
+			$this->data[] = array('companylogo' => $this->upload->data());
+		}
+	}
+
+	//function to delete companylogo
+	function deleteImage(){
+		$companyid=$_POST['txtcompanyid'];
+        $field=$_POST['file'];
+
+		$user_model = $this->getModel('user_model');
+		$this->query = $user_model->deletefile_data();
+	}
+
+
+	public function getsenderprojects() {
+		$company_model=$this->getModel('company_model');
+		$this->senderprojects = $company_model->getsenderprojects();
+		$this->load->view('customer/getsenderprojects', $this->senderprojects);
+	}
+
+	public function getreceiverprojects() {
+		$company_model=$this->getModel('company_model');
+		$this->receiverprojects = $company_model->getreceiverprojects();
+		$this->load->view('customer/getreceiverprojects', $this->receiverprojects);
+	}
+
+	//dropdown search  - start
+	function searchallprojects() {
+		$this->userid = $_POST['userid']; //$userid;
+		$company_model=$this->getModel('company_model');
+		$this->searchedprojects = $company_model->searchallprojects($this->userid);
+		$this->load->view('customer/searchdistributepoject', $this->userid, $this->searchedprojects);
+	}
+
+	public function getsearchprojects() {
+
+		$company_model=$this->getModel('company_model');
+		$this->searchproject = $this->input->post('searchproject');
+		$splitdata = explode(" ", $this->searchproject);  //split firstname and lastname
+		$firstname = $splitdata[0];
+		$lastname = "";
+		if (isset($splitdata[1])) {
+			$lastname = $splitdata[1];
+		}
+
+		$this->searchedprojects=$company_model->getsearchprojects($firstname, $lastname);
+		//$this->load->view('customer/getsearchedprojects', $this->searchedprojects);
+
+	}
+
+	//Function to save distributed projects
+	public function createdistributeprojects() {
+		$this->load->helper('form');
+		$this->load->helper('html');
+		$company_model=$this->getModel('company_model');
+		$selected = array();
+		if (isset($_POST['right-select'])) {
+			$selected = $_POST['right-select'];
+			$selectedcount = count($selected);
+
+			$company_model->createdistributeprojects($selected, $selectedcount);
+			$this->flag = 'success';
+			echo $this->flag;
+
+		}
+
+	}
+	// Load to Cancel Company account
+	public function cancelcompanyaccount() {
+		$userinfo = $this->getSessionData('userinfo');
+		$cid = $userinfo['companyID'];
+		$usermodel = $this->getModel('user_model');
+
+		$this->query = $usermodel->companyaccountcancel($cid);
+		$this->companyname = $usermodel->getcompanyname($cid);
+		$company = $this->companyname[0]->companyname;
+		$count=count($this->query);
+		for($i=0; $i<$count; $i++){
+			$to=$this->query[$i]->emailid;
+			$firstname = $this->query[$i]->firstname;
+			$lastname = $this->query[$i]->lastname;
+
+			$from='thunderpaste@gmail.com';
+			$subject='Your Quicksolar Account Has Cancelled';
+			$body = $this->load->view('email/cancelcompany',array('company' => $company, 'firstname'=>$firstname, 'lastname'=>$lastname),true);
+			$mailer=$this->getMailer();
+			$Message=$this->getMailerMessage($to, $body, $subject, $from);
+			if ($mailer->sendEmail($Message) == TRUE) {
+				$comment = 'Message sent successfully';
+			}
+			else{
+				$comment = 'Emailid is Invalid, request could not be processed';
+			}
+
+		}
+
+		$this->query = $usermodel->sendemailtosuper();
+		$too = $this->query[0]->emailid; 
+		$firstname = $this->query[0]->firstname;
+		$lastname = $this->query[0]->lastname;
+
+		$subject='Company Account Has Cancelled';
+		$body = $this->load->view('email/sendtosuperadmin',array('company' => $company, 'firstname'=>$firstname, 'lastname'=>$lastname),true);
+		$mailer=$this->getMailer();
+		$Message=$this->getMailerMessage($to, $body, $subject, $from);
+		if ($mailer->sendEmail($Message) == TRUE) {
+			 $comment = 'Message sent successfully'; 
+		}
+		else{
+			 $comment = 'Emailid is Invalid, request could not be processed'; 
+		}
+		
+		//$this->render('account/auth_controller/logout');
+		$this->setAuthenticated(false);
+		redirect('account/login');
+	}
+  Public function showfeatures(){
+           $user_model=$this->getModel('user_model');
+            $this->query1 = $user_model->subscription();
+			$this->tier1 = $user_model->subscriptiontier1();
+			$this->tier2 = $user_model->subscriptiontier2();
+			$this->tier3 = $user_model->subscriptiontier3();
+			$this->tier4 = $user_model->subscriptiontier4();
+           	$companyrinfo = $this->getSessionData('companyinfo');
+            $userInfo = $this->getSessionData('userinfo');
+            $getnextmonthplan=$user_model->getnextmonthplan($userInfo['companyID']);
+
+                  if($companyrinfo['subscriptiontype']==4){
+            $newsubscriptionid=$companyrinfo['subscriptiontype']-1;
+                    }
+                    else{
+                      $newsubscriptionid=0;
+                        }
+            $this->stylesheets(array(
+                'jquery-ui-1.9.2.custom.css',
+                'jquery.fancybox.css'
+                    ));
+
+			$this->javascripts(array(
+                'jquery-ui-1.9.2.custom.min.js',
+                'jquery.fancybox.js',
+                'account/quickbucks.js'
+                  ));
+
+   $data=array('this->query1'=>$this->query1,
+          'this->tier1'=>$this->tier1,
+          'this->tier2'=>$this->tier2,
+          'this->tier3'=>$this->tier3,
+          'this->tier4'=>$this->tier4,
+          'subscriptionid'=>$companyrinfo['subscriptiontype'],
+          'nextmonthplan'=>$getnextmonthplan,
+          'newsubscriptionid' => $newsubscriptionid
+       );
+    $this->render('account/register/changefeatures',$data);
+
+  }
+	//end of class
+}

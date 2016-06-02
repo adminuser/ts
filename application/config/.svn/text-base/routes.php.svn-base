@@ -1,0 +1,102 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+/*
+| -------------------------------------------------------------------------
+| URI ROUTING
+| -------------------------------------------------------------------------
+| This file lets you re-map URI requests to specific controller functions.
+|
+| Typically there is a one-to-one relationship between a URL string
+| and its corresponding controller class/method. The segments in a
+| URL normally follow this pattern:
+|
+|	example.com/class/method/id/
+|
+| In some instances, however, you may want to remap this relationship
+| so that a different class/function is called than the one
+| corresponding to the URL.
+|
+| Please see the user guide for complete details:
+|
+|	http://codeigniter.com/user_guide/general/routing.html
+|
+| -------------------------------------------------------------------------
+| RESERVED ROUTES
+| -------------------------------------------------------------------------
+|
+| There area two reserved routes:
+|
+|	$route['default_controller'] = 'welcome';
+|
+| This route indicates which controller class should be loaded if the
+| URI contains no data. In the above example, the "welcome" class
+| would be loaded.
+|
+|	$route['404_override'] = 'errors/page_missing';
+|
+| This route will tell the Router what URI segments to use if those provided
+| in the URL cannot be matched to a valid route.
+|
+*/
+
+$route['default_controller'] = "dashboard/dashboard_controller";
+$route['dashboard'] = 'dashboard/dashboard_controller/gotoDashboard';
+$route['404_override'] = '';
+
+// account
+
+$route['account/signupemail'] = 'account/auth_controller/sendNewsLetter';
+$route['account/login'] = 'account/auth_controller/login';
+$route['account/logout'] = 'account/auth_controller/logout';
+$route['account/signup'] = 'account/register_controller';
+
+
+// account settings
+$route['account/settings'] = 'account/setting_controller/userSetting';
+$route['account/profile'] = 'account/profile_controller';
+$route['account/company_profile'] = 'account/company_controller';
+
+$route['account/members'] = 'account/member_controller';
+$route['account/editMember'] = 'account/member_controller/editMember';
+$route['account/deleteMember'] = 'account/member_controller/deleteMember';
+$route['account/quickbucks'] = 'account/quickbuck_controller';
+
+
+$route['customer/(:any)'] = 'dashboard/customer_controller/$1';
+
+// payment
+$route['payment/subpaymentrequest'] = 'payment/payment_controller/subpaymentrequest';
+$route['payment/callback'] = 'payment/payment_controller/callback';
+
+//static pages
+$route['page/(:any)'] = 'page_controller/index/$1';
+
+// usermanage
+$route['usermanage'] = 'usermanage';
+
+// solarpanel
+$route['solarpanel/create']='solarpanel/solarpanel_controller/create';
+$route['solarpanel/edit']='solarpanel/solarpanel_controller/edit';
+$route['solarpanel/view']='solarpanel/solarpanel_controller/view';
+$route['solarpanel/delete']='solarpanel/solarpanel_controller/delete';
+$route['solarpanel/updatedatatest']='solarpanel/solarpanel_controller/updatedatatest';
+
+
+// inverter
+$route['inverter/create'] = 'inverter/inverter_controller/create';
+$route['inverter/view'] = 'inverter/inverter_controller/viewinverter';
+$route['inverter/edit'] = 'inverter/inverter_controller/editalldata';
+$route['inverter/deletefile'] = 'inverter/inverter_controller/deletefile';
+
+
+
+
+
+
+
+
+// Incentive Wiki
+$route['incentives/create'] = 'incentives/profile_service_controller/addNewSolarIncentives';
+$route['incentives/view'] = 'incentives/profile_service_controller/IncentiveWikiview';
+
+
+$route['incentives/IncentiveProfilesService/add'] = 'incentives/IncentiveProfilesService/add';

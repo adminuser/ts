@@ -1,0 +1,199 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class Page_Controller extends QS_Controller
+{
+	public function index($page){
+
+		$static_model=$this->getModel('static_model');
+		$userInfo = 	$this->session->all_userdata('userinfo');
+		//$userInfo = $this->getSessionData('userinfo');
+			
+
+			
+		switch($page){
+			case 'aboutus':
+				$this->setTitle('Aboutus');
+                $this->render("staticpages/aboutus");
+				break;
+
+			case 'privacypolicy':
+				$this->setTitle('Privacypolicy');
+				$this->render('staticpages/privacypolicy');
+				break;
+
+			case 'press':
+				$this->setTitle('Press');
+				$this->render('staticpages/press');
+				break;
+
+			case 'helpcenter':
+				$this->setTitle('HelpCenter');
+				$this->render('staticpages/helpcenter');
+				break;
+
+			case 'solarpaneldatabaseview':
+				$this->setTitle('Solarpaneldatabase');
+				$this->load->helper('form');
+				$this->load->helper('html');
+
+				if($this->isAuthenticated()){
+					$this->render('staticpages/solarpaneldatabaseview',array('customerdata' => $userInfo));
+				}
+				else{
+
+					$this->render('staticpages/solarpaneldatabaseview');
+				}
+                break;
+
+			case 'getsolarpaneldb':
+				$this->load->helper('form');
+				$this->load->helper('html');
+
+
+				$result = $static_model->getsolarpaneldb();
+				//print_r($result);
+
+				$this->load->view('staticpages/solarpaneldatabasefullview', array('result'=>$result));
+				break;
+
+			case 'getsolarpanelspecdatasheet':
+				$this->load->helper('form');
+				$this->load->helper('html');
+
+				$id=$_GET['id'];
+				//print_r($id);
+				$panel = $static_model->getsolarpanelspecdatasheet($id);
+				//print_r ($panel); exit;
+				$this->render("staticpages/solarpanelspecdatasheetview", array('panel'=>$panel));
+				break;
+
+
+			case 'resources':
+				$this->setTitle('Resources');
+				$this->render('staticpages/resources');
+				break;
+
+			case 'homeowners':
+				$this->setTitle('Homeowners');
+				$this->render('staticpages/homeowners');
+				break;
+
+
+			case 'solarfaqs':
+				$this->setTitle('Solarfaqs');
+				$this->render('staticpages/solarfaqs');
+				break;
+
+			case 'datasources':
+				$this->setTitle('Datasources');
+				$this->render('staticpages/datasources');
+				break;
+
+			case 'termsconditions':
+				$this->setTitle('Terms & Conditions');
+				$this->render('staticpages/termsconditions');
+				break;
+
+
+			case 'quicktutorial':
+				$this->setTitle('QuickSolarTutorial');
+				$this->render('staticpages/guide1');
+				break;
+
+
+			case 'guide1':
+				$this->setTitle('QuickSolarGuide');
+				$this->render('staticpages/guide1');
+				break;
+
+
+			case 'guide2':
+				$this->setTitle('QuickSolarGuide');
+				$this->render('staticpages/guide2');
+				break;
+
+			case 'guide3':
+				$this->setTitle('QuickSolarGuide');
+				$this->render('staticpages/guide3');
+				break;
+
+			case 'guide3':
+				$this->setTitle('QuickSolarGuide');
+				$this->render('staticpages/guide3');
+				break;
+
+			case 'guide4':
+				$this->setTitle('QuickSolarGuide');
+				$this->render('staticpages/guide4');
+				break;
+
+			case 'guide5':
+				$this->setTitle('QuickSolarGuide');
+				$this->render('staticpages/guide5');
+				break;
+				
+			case 'loadglossary':
+				$glossarypath=APPPATH.'libraries/solarglossary.xml';
+				$data = (array)simplexml_load_file($glossarypath);
+				$glossary = array_pop($data);
+			    $this->setTitle('SolarGlossary');
+			    $this->render('staticpages/solar-glossary',array('glossary'=>$glossary));
+				break;
+				
+			case 'searchglossary':
+				$searchdata= $this->input->post('searchdata');
+				//print_r($searchdata);
+				$glossarypath=APPPATH.'libraries/solarglossary.xml';
+				$data = (array)simplexml_load_file($glossarypath);
+				$data = array_pop($data);
+				$glossary=array();
+				foreach($data as $sg){
+					$sgarr=(array)$sg;
+					if(preg_grep('/'.$searchdata.'/',$sgarr)){
+						$glossary[]=$sg;
+					}
+				}
+				$this->load->view('staticpages/search-glossary',array('glossary'=>$glossary));
+				
+		
+		default:
+				break;
+		}
+	}
+    /* @author Administrator sandeep*/
+public function downloadPdf(){
+    include_once(APPPATH.'libraries/MPDF56/mpdf.php');
+	$mpdf=new mPDF('utf-8', 'A4-L');
+    $base_url=base_url();
+	$page1=$this->load->view('staticpages/qs_guidepdf_img1',array('base_url'=>$base_url),true);
+	$page2=$this->load->view('staticpages/qs_guidepdf_img2u',array('base_url'=>$base_url),true);
+	$page3=$this->load->view('staticpages/qs_guidepdf_img2l',array('base_url'=>$base_url),true);
+	$page4=$this->load->view('staticpages/qs_guidepdf_img3',array('base_url'=>$base_url),true);
+	$page5=$this->load->view('staticpages/qs_guidepdf_img4',array('base_url'=>$base_url),true);
+	$page6=$this->load->view('staticpages/qs_guidepdf_img5',array('base_url'=>$base_url),true);
+	//echo $page;exit;
+/* 	echo $page1;
+	echo $page2;
+	echo $page3;
+	echo $page4;
+	echo $page5;
+	echo $page6;exit;  */
+    $mpdf->AddPage();
+	$mpdf->WriteHTML($page1);
+	$mpdf->AddPage();
+	$mpdf->WriteHTML($page2);
+	$mpdf->AddPage();	
+	$mpdf->WriteHTML($page3);
+	$mpdf->AddPage();
+	$mpdf->WriteHTML($page4);
+	$mpdf->AddPage();
+	$mpdf->WriteHTML($page5);
+	$mpdf->WriteHTML($page6);
+	$mpdf->AddPage();
+    $mpdf->Output();
+
+}
+ //class end
+}
+
+?>
