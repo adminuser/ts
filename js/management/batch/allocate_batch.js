@@ -52,17 +52,18 @@ $.ajax({
 //Get Batches - end
 
 //Get Candidates - start
-function getBatchCandBySkill(){
-/*
-$.ajax({
-	url: ,
-	data: ,
-	dataType: ,
-	success: function(data){
+function getBatchCandBySkill(batch,baseUrl){	
+	var skill = $("#selectedSkill option:selected").val();
+	var data = {'skill':skill,'batch':batch};
+	$.ajax({
+		url: baseUrl+"batch/getBatchCandBySkill",
+		data: JSON.stringify(data),
+		dataType: 'html',
+		success: function(data){
+			$("#from").html(data);
+		},
+		type: 'POST'
+	});
 
-	},
-	type: 'POST'
-});
-*/
 }
 //Get Candidates - end

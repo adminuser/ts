@@ -103,6 +103,17 @@ class Batch_Model extends TS_Model
 		return $this->db->get('batch')->result();
 	}	
 
+	public function getUnallocatedCandBySkill(){
+		$queryString = 'SELECT up.userid,firstname,lastname
+						FROM user_profile up
+						
+						WHERE up.user_type = ?
+						AND ';
+	}
+
+	public function getAllocatedCandBySkil(){
+
+	}
 
 }
 

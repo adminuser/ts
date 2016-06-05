@@ -24,9 +24,8 @@ echo form_open('batch/allocate', $att);
 <div>
 <span class="label label-primary">Select Batch :</span>
 	<?php // Skill selection - start ?>
-	<select id="batchesBySkill" class="form-control" onchange="getTrainersByBatch(this.value,'<?php echo $baseUrl ?>')">
-		<option value="0"> -- None -- </option>	
-		<option value="1"> -- Test Batch-- </option>	
+	<select id="batchesBySkill" class="form-control" onchange="getBatchCandBySkill(this.value,'<?php echo $baseUrl ?>')">
+		<option value="0"> -- None -- </option>		
 	</select>
 	<br><br>
 	<?php // Skill selection - end ?>

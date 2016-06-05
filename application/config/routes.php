@@ -87,6 +87,7 @@ $route['batch/edit'] = 'management/Batch_Controller/editBatch';
 $route['batch/allocate'] = 'management/Batch_Controller/allocateBatch';
 $route['batch/getTrainersBySkill'] = 'management/Batch_Controller/getTrainersBySkill';
 $route['batch/getReleasedBatchesBySkill'] = 'management/Batch_Controller/getReleasedBatchesBySkill';
+$route['batch/getBatchCandBySkill'] = 'management/Batch_Controller/getBatchCandBySkill';
 
 $route['batch/mail'] = 'management/Batch_Controller/testMail';
 
