@@ -16,6 +16,8 @@ class Batch_Model extends TS_Model
 	private $is_trainer_2_active;
 	private $status;
 
+	private $ql;
+
 	public function __construct(){
 		parent:: __construct();
 	}
@@ -104,14 +106,16 @@ class Batch_Model extends TS_Model
 	}	
 
 	public function getUnallocatedCandBySkill(){
-		$queryString = 'SELECT up.userid,firstname,lastname
+		$queryString = 'SELECT up.userid,up.firstname,up.lastname.bl.candidateid,bl.status
 						FROM user_profile up
-						
+						LEFT JOIN batch_link bl
+						ON up.userid = bl.candidateid
 						WHERE up.user_type = ?
 						AND ';
+						
 	}
 
-	public function getAllocatedCandBySkil(){
+	public function getAllocatedCandBySkill(){
 
 	}
 

@@ -123,13 +123,13 @@ class Batch_Controller extends TS_Controller
 		echo $this->load->view('management/batch/trainer_dropdown_by_id',array('trainers'=>$trainers,'skillMap'=>$skillMap),true);
 	}
 
-	public function getReleasedBatchesBySkill(){
+	public function getReleasedBatchesBySkill(){ 
 		$batches = $this->getModel('Batch_Model')->getReleasedBatchesBySkill();
 		echo $this->load->view('management/batch/batch_dropdown_by_skill',array('batches'=>$batches),true);
 	}	
 
-	public function getBatchCandBySkill(){
-		
+	public function getBatchCandBySkill(){ 
+		$candidates = $this->getModel('Batch_Model')->getUnallocatedCandBySkill();
 	}
 
 	public function testMail(){

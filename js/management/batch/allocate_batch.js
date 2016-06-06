@@ -66,4 +66,7 @@ function getBatchCandBySkill(batch,baseUrl){
 	});
 
 }
+
+//$( document ).ajaxStart(function() { alert("Wait...");});
+$(document).ajaxError(function(){alert("ERROR OCCURRED...")});
 //Get Candidates - end
