@@ -65,7 +65,8 @@
 						<ul>
 							<li><a href="<?php echo base_url();?>batch/viewall" id="batch-viewall">View All Batch</a></li>
 							<li><a href="<?php echo base_url();?>batch/add" id="batch-add">Add Batch</a></li>	
-							<li><a href="<?php echo base_url();?>batch/allocate" id="batch-allocate">Allocation</a></li>					
+							<li><a href="<?php echo base_url();?>batch/allocate" id="batch-allocate">Allocate Candidates</a></li>
+							<li><a href=""></a>Upload Resume Template</li>					
 						</ul>
 						<hr>					
 					<!-- Batch end -->	
@@ -73,10 +74,20 @@
 					<!-- Forum -->	
 						Forum Management
 						<ul>
-						 <li><a href="<?php echo base_url();?>fourm/approvalwaitlist">Approval Waitlist</a></li> 
-						 <li><a href="<?php echo base_url();?>fourm/replycount">Trainer's Reply Count</a></li> 
+						 <li><a href="<?php echo base_url();?>fourm/approvalwaitlist"></a>Approval Waitlist</li> 
+						 <li><a href="<?php echo base_url();?>fourm/replycount"></a>Trainer's Reply Count</li> 
 						</ul>
-					<!-- Forum -->								
+						<hr>
+					<!-- Forum -->	
+
+
+					<!-- Quick Overview -->
+						Quick Overview	
+						<ul>
+							<li><a href=""></a>Trainers</li>
+							<li><a href=""></a>Candidates</li>
+						</ul>					
+					<!-- Quick Overview -->
 
 					</div>
 				</div>				
